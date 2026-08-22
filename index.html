@@ -1,0 +1,2298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Souvenirs Catalog</title>
+    <style>
+        :root {
+            --bg: #f4f6f9;
+            --card-bg: #ffffff;
+            --text: #2c3e50;
+            --text-light: #7f8c8d;
+            --accent: #3498db;
+            --accent-dark: #2980b9;
+            --danger: #e74c3c;
+            --border: #e1e8ed;
+            --radius: 12px;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            --transition: 0.2s ease;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            padding: 16px;
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            flex: 1;
+            min-width: 180px;
+        }
+        .search-wrapper {
+            flex: 2;
+            min-width: 180px;
+            position: relative;
+        }
+        .search-wrapper input {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            font-size: 1rem;
+            background: var(--card-bg);
+            transition: border var(--transition);
+            outline: none;
+        }
+        .search-wrapper input:focus { border-color: var(--accent); }
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 30px;
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background var(--transition), transform var(--transition);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .btn:hover { background: #eaeef2; transform: translateY(-1px); }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-dark); }
+        .lang-switch {
+            display: inline-flex;
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            background: var(--card-bg);
+        }
+        .lang-switch button {
+            padding: 8px 14px;
+            border: none;
+            background: transparent;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background var(--transition), color var(--transition);
+        }
+        .lang-switch button.active { background: var(--accent); color: white; }
+        .lang-switch button:hover:not(.active) { background: #eaeef2; }
+        .catalog {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform var(--transition), box-shadow var(--transition);
+            display: flex;
+            flex-direction: column;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+        .card-photo {
+            width: 100%;
+            height: 200px;
+            background-color: #eef2f5;
+            background-size: cover;
+            background-position: center;
+            cursor: pointer;
+            position: relative;
+        }
+        .card-photo.placeholder::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23808c96' stroke-width='4'%3E%3Crect x='2' y='2' width='96' height='96' rx='6'/%3E%3Cpath d='M2 2 98 98M98 2 2 98'/%3E%3C/g%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 68px 68px;
+            opacity: 0.32;
+        }
+        .card-photo-count {
+            position: absolute;
+            bottom: 8px; right: 8px;
+            background: rgba(0,0,0,0.65);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 12px;
+            pointer-events: none;
+        }
+        .card-body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+            word-break: break-word;
+        }
+        .card-price {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--accent-dark);
+        }
+        .card-price-usd {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-light);
+            margin-top: -4px;
+        }
+        .card-meta {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .card-desc {
+            font-size: 0.9rem;
+            color: var(--text);
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            flex: 1;
+        }
+        .card-date {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            justify-content: flex-end;
+        }
+        .card-actions button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .edit-btn { background: #f0f4f8; color: var(--text); }
+        .edit-btn:hover { background: #e2e8f0; }
+        .delete-btn { background: #fef2f2; color: var(--danger); }
+        .delete-btn:hover { background: #fde8e8; }
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 16px;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.hidden { display: none; }
+        .modal-content {
+            background: white;
+            border-radius: var(--radius);
+            padding: 24px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        .modal-close {
+            position: absolute;
+            top: 12px; right: 16px;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--text-light);
+            line-height: 1;
+            padding: 4px 8px;
+            border-radius: 50%;
+            transition: background var(--transition);
+        }
+        .modal-close:hover { background: #f0f0f0; }
+        .modal-content h2 { margin-bottom: 20px; font-size: 1.5rem; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #fafbfc;
+            transition: border var(--transition);
+            outline: none;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--accent);
+            background: white;
+        }
+        .form-group input[readonly] {
+            background: #f0f4f8;
+            color: var(--text-light);
+            cursor: default;
+        }
+        .form-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .form-row .form-group {
+            flex: 1;
+            min-width: 140px;
+        }
+        .dimensions-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .dimensions-row input {
+            flex: 1;
+            min-width: 72px;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+        .dimensions-row input::placeholder { color: var(--text-light); opacity: 1; }
+        .photo-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .photo-actions .btn {
+            flex: 1;
+            min-width: 120px;
+            justify-content: center;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+        }
+        .photo-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .photo-thumb {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .photo-thumb-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .photo-remove {
+            position: absolute;
+            top: -6px; right: -6px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 22px; height: 22px;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .settings-info {
+            background: #f0f7ff;
+            border: 1px solid #d0e6f7;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+        .settings-info strong { color: var(--accent-dark); }
+        .rate-source {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        .lightbox {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .lightbox.hidden { display: none; }
+        .lightbox-inner {
+            position: relative;
+            width: 100%; height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .lightbox img {
+            max-width: 92%;
+            max-height: 72%;
+            object-fit: contain;
+            border-radius: 8px;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+        .lightbox-close {
+            position: absolute;
+            top: 16px; right: 20px;
+            font-size: 2.8rem;
+            color: white;
+            cursor: pointer;
+            z-index: 2010;
+            line-height: 1;
+            background: rgba(0,0,0,0.3);
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .lightbox-close:hover { background: rgba(255,255,255,0.15); }
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: none;
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            font-size: 1.8rem;
+            cursor: pointer;
+            z-index: 2010;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            backdrop-filter: blur(4px);
+        }
+        .lightbox-nav:hover { background: rgba(255,255,255,0.3); }
+        .lightbox-nav.prev { left: 16px; }
+        .lightbox-nav.next { right: 16px; }
+        .lightbox-nav.hidden { display: none; }
+        .lightbox-counter {
+            position: absolute;
+            top: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.55);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            z-index: 2010;
+            letter-spacing: 0.5px;
+        }
+        .lightbox-thumbs {
+            position: absolute;
+            left: 0; right: 0;
+            bottom: 0;
+            padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+            overflow-x: auto;
+            overflow-y: hidden;
+            z-index: 2010;
+            background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0));
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .lightbox-thumbs::-webkit-scrollbar { display: none; }
+        .lightbox-thumbs-inner {
+            display: flex;
+            gap: 8px;
+            width: max-content;
+            margin: 0 auto;
+        }
+        .lightbox-thumbs img {
+            width: 62px; height: 62px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            opacity: 0.5;
+            cursor: pointer;
+            flex: none;
+            max-width: none;
+            max-height: none;
+            pointer-events: auto;
+            transition: opacity 0.2s, border-color 0.2s;
+        }
+        .lightbox-thumbs img.active { opacity: 1; border-color: #fff; }
+        .lightbox-thumbs.hidden { display: none; }
+        /* --- view modes --- */
+        .catalog.view-large { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+        .catalog.view-two   { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        .catalog.view-four  { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .catalog.view-two .card-photo  { height: 160px; }
+        .catalog.view-two .card-desc   { -webkit-line-clamp: 2; }
+        .catalog.view-four .card-photo { height: 110px; }
+        .catalog.view-four .card-photo.placeholder::before { background-size: 40px 40px; }
+        .catalog.view-two .card-photo.placeholder::before { background-size: 56px 56px; }
+        .catalog.view-four .card-body  { padding: 10px; gap: 4px; }
+        .catalog.view-four .card-title { font-size: 0.95rem; }
+        .catalog.view-four .card-price { font-size: 1rem; }
+        .catalog.view-four .card-desc,
+        .catalog.view-four .card-date,
+        .catalog.view-four .card-meta  { display: none; }
+        .catalog.view-four .card-actions button { padding: 5px 8px; font-size: 0.8rem; }
+        .catalog.view-list { display: flex; flex-direction: column; gap: 8px; }
+
+        .list-row {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .list-row-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        .list-row-head:hover { background: #f7f9fb; }
+        .list-thumb {
+            width: 52px; height: 52px;
+            flex: none;
+            border-radius: 8px;
+            background-color: #eef2f5;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        .list-thumb.placeholder::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23808c96' stroke-width='4'%3E%3Crect x='2' y='2' width='96' height='96' rx='6'/%3E%3Cpath d='M2 2 98 98M98 2 2 98'/%3E%3C/g%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 34px 34px;
+            opacity: 0.32;
+        }
+        .list-main { flex: 1; min-width: 0; }
+        .list-title {
+            font-size: 1rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .list-sub { font-size: 0.85rem; color: var(--text-light); }
+        .list-sub b { color: var(--accent-dark); font-weight: 700; }
+        .list-arrow { color: var(--text-light); font-size: 1rem; transition: transform var(--transition); }
+        .list-row.open .list-arrow { transform: rotate(180deg); }
+        .list-body {
+            padding: 0 12px 12px 12px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .list-body.hidden { display: none; }
+        .list-photos { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 12px; }
+        .list-photos img {
+            width: 72px; height: 72px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        /* --- autosave indicator --- */
+        .save-state {
+            font-size: 0.85rem;
+            color: #27ae60;
+            min-height: 20px;
+            margin-bottom: 12px;
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+        .save-state.on { opacity: 1; }
+
+        /* --- export history --- */
+        .export-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+        .export-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fafbfc;
+            font-size: 0.88rem;
+        }
+        .export-row .ex-main { flex: 1; min-width: 0; }
+        .export-row .ex-name { font-weight: 600; word-break: break-all; }
+        .export-row .ex-meta { color: var(--text-light); font-size: 0.8rem; }
+        .export-row button { padding: 6px 12px; font-size: 0.85rem; }
+        .export-empty { color: var(--text-light); font-size: 0.88rem; margin-top: 8px; }
+
+        @media (max-width: 600px) {
+            .catalog.view-four { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+            .catalog.view-four .card-photo { height: 72px; }
+            .catalog.view-four .card-body { padding: 6px; }
+            .catalog.view-four .card-title { font-size: 0.78rem; }
+            .catalog.view-four .card-price { font-size: 0.8rem; }
+            .catalog.view-four .card-price-usd { font-size: 0.7rem; }
+            .catalog.view-four .card-actions { gap: 4px; margin-top: 6px; }
+            .catalog.view-four .card-actions button { padding: 4px 6px; font-size: 0.72rem; }
+
+            body { padding: 8px; }
+            header { gap: 8px; }
+            h1 { font-size: 1.4rem; }
+            .btn { padding: 8px 14px; font-size: 0.85rem; }
+            .modal-content { padding: 16px; margin: 8px; }
+            .catalog { gap: 12px; }
+            .lang-switch button { padding: 6px 10px; font-size: 0.85rem; }
+            .lightbox-nav { width: 40px; height: 40px; font-size: 1.5rem; }
+            .lightbox-nav.prev { left: 8px; }
+            .lightbox-nav.next { right: 8px; }
+            .lightbox-close { top: 10px; right: 10px; width: 42px; height: 42px; font-size: 2.2rem; }
+            .lightbox-thumbs img { width: 52px; height: 52px; }
+            .lightbox img { max-height: 66%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="app-title">📦 Souvenirs</h1>
+            <div class="search-wrapper">
+                <input type="text" id="search-input" placeholder="Search by name or description...">
+            </div>
+            <div class="toolbar">
+                <div class="lang-switch" id="lang-switch">
+                    <button type="button" data-lang="en" class="active">EN</button>
+                    <button type="button" data-lang="ru">RU</button>
+                </div>
+                <button class="btn" id="view-btn" title="View">▦</button>
+                <button class="btn" id="settings-btn" title="Settings">⚙️</button>
+                <button class="btn" id="export-btn" title="Export catalog as archive">📤 Export</button>
+                <button class="btn" id="import-btn" title="Import catalog from archive">📥 Import</button>
+                <button class="btn btn-primary" id="add-btn">➕ Add item</button>
+                <input type="file" id="import-file" accept=".zip,.json,application/zip,application/json" style="display: none;">
+            </div>
+        </header>
+        <main>
+            <div id="catalog" class="catalog"></div>
+            <div id="empty-state" style="text-align:center; padding: 40px; color: var(--text-light); display: none;">
+                <p style="font-size: 2rem; margin-bottom: 8px;">📭</p>
+                <p id="empty-text">No items yet. Add the first one!</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Form modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">×</button>
+            <h2 id="modal-title">New item</h2>
+            <div class="save-state" id="save-state"></div>
+            <form id="item-form">
+                <div class="form-group">
+                    <label for="f-name" id="label-name">Name *</label>
+                    <input type="text" id="f-name" required placeholder="Souvenir name">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="f-price" id="label-price">Price (GMD) *</label>
+                        <input type="number" id="f-price" step="0.01" min="0" required placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="f-price-usd" id="label-price-usd">≈ USD (auto)</label>
+                        <input type="text" id="f-price-usd" readonly placeholder="—">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="f-weight" id="label-weight">Weight (g)</label>
+                        <input type="number" id="f-weight" step="1" min="0" placeholder="e.g. 500">
+                    </div>
+                    <div class="form-group">
+                        <label for="f-weight-kg" id="label-weight-kg">≈ kg (auto)</label>
+                        <input type="text" id="f-weight-kg" readonly placeholder="—">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label id="label-dimensions">Dimensions (cm)</label>
+                    <div class="dimensions-row">
+                        <input type="number" id="f-length" step="0.1" min="0" placeholder="Length">
+                        <input type="number" id="f-width" step="0.1" min="0" placeholder="Width">
+                        <input type="number" id="f-height" step="0.1" min="0" placeholder="Height">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="f-materials" id="label-materials">Materials</label>
+                    <input type="text" id="f-materials" placeholder="e.g. ebony, raffia, cowrie shells">
+                </div>
+                <div class="form-group">
+                    <label for="f-description" id="label-description">Description</label>
+                    <textarea id="f-description" rows="4" placeholder="History, materials, features..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label id="label-photos">Photos</label>
+                    <div class="photo-actions">
+                        <button type="button" class="btn" id="btn-gallery">🖼️ <span id="text-gallery">Gallery</span></button>
+                        <button type="button" class="btn" id="btn-camera">📷 <span id="text-camera">Camera</span></button>
+                    </div>
+                    <input type="file" id="f-photos-gallery" accept="image/*" multiple style="display:none;">
+                    <input type="file" id="f-photos-camera" accept="image/*" capture="environment" style="display:none;">
+                    <div id="photo-preview" class="photo-preview"></div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings modal -->
+    <div id="settings-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close" id="settings-close">×</button>
+            <h2 id="settings-title">Settings</h2>
+            <div class="settings-info" id="rate-info-box">
+                <div><strong id="rate-display">1 GMD = 0.0165 USD</strong></div>
+                <div class="rate-source" id="rate-source-text">Source: default</div>
+            </div>
+            <div class="form-group">
+                <label for="f-custom-rate" id="label-custom-rate">Custom rate (1 GMD = ? USD)</label>
+                <input type="number" id="f-custom-rate" step="0.000001" min="0" placeholder="e.g. 0.0165">
+            </div>
+            <div class="form-actions" style="justify-content: flex-start; flex-wrap: wrap;">
+                <button type="button" class="btn btn-primary" id="save-rate-btn">💾 Save custom rate</button>
+                <button type="button" class="btn" id="update-rate-btn">🔄 Update from internet</button>
+            </div>
+            <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--border);">
+            <h3 id="exports-title" style="font-size: 1.05rem; margin-bottom: 4px;">Last exports</h3>
+            <div id="export-list" class="export-list"></div>
+            <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--border);">
+            <p id="settings-note" style="font-size: 0.9rem; color: var(--text-light);">
+                Catalog data is stored locally in your browser (IndexedDB) and survives page reloads and most updates. Always keep a ZIP backup for transferring to another device.
+            </p>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox hidden">
+        <div class="lightbox-inner">
+            <span class="lightbox-close" id="lightbox-close">×</span>
+            <button class="lightbox-nav prev" id="lightbox-prev" aria-label="Previous">‹</button>
+            <img id="lightbox-img" src="" alt="Photo">
+            <button class="lightbox-nav next" id="lightbox-next" aria-label="Next">›</button>
+            <div class="lightbox-counter" id="lightbox-counter">1 / 1</div>
+            <div class="lightbox-thumbs hidden" id="lightbox-thumbs"><div class="lightbox-thumbs-inner" id="lightbox-thumbs-inner"></div></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            const translations = {
+                en: {
+                    title: '📦 Souvenirs',
+                    pageTitle: 'Souvenirs Catalog',
+                    searchPlaceholder: 'Search by name or description...',
+                    export: '📤 Export',
+                    exportTitle: 'Export catalog as ZIP archive',
+                    import: '📥 Import',
+                    importTitle: 'Import catalog from ZIP or JSON',
+                    addItem: '➕ Add item',
+                    settingsTitle: 'Settings',
+                    emptyText: 'No items yet. Add the first one!',
+                    modalNew: 'New item',
+                    modalEdit: 'Edit item',
+                    labelName: 'Name *',
+                    namePlaceholder: 'Souvenir name',
+                    labelPrice: 'Price (GMD) *',
+                    labelPriceUsd: '≈ USD (auto)',
+                    labelWeight: 'Weight (g)',
+                    weightPlaceholder: 'e.g. 500',
+                    labelWeightKg: '≈ kg (auto)',
+                    labelDimensions: 'Dimensions (cm)',
+                    lengthPlaceholder: 'Length, cm',
+                    widthPlaceholder: 'Width, cm',
+                    heightPlaceholder: 'Height, cm',
+                    labelMaterials: 'Materials',
+                    materialsPlaceholder: 'e.g. ebony, raffia, cowrie shells',
+                    materialsIcon: '🧵 ',
+                    labelDescription: 'Description',
+                    descPlaceholder: 'History, materials, features...',
+                    labelPhotos: 'Photos',
+                    gallery: 'Gallery',
+                    camera: 'Camera',
+                    saved: '✓ Saved',
+                    saving: 'Saving…',
+                    edit: '✎ Edit',
+                    delete: '🗑 Delete',
+                    priceNotSet: 'Price not set',
+                    currency: ' GMD',
+                    weightIcon: '⚖️ ',
+                    gramsShort: ' g',
+                    kgShort: ' kg',
+                    dimsIcon: '📐 ',
+                    dimsUnit: ' cm',
+                    lengthShort: 'L: ',
+                    widthShort: 'W: ',
+                    heightShort: 'H: ',
+                    added: 'Added: ',
+                    confirmDelete: 'Delete this item?',
+                    deleteError: 'Delete error: ',
+                    loadError: 'Failed to load data: ',
+                    nameRequired: 'Please enter the item name',
+                    priceInvalid: 'Please enter a valid price (number ≥ 0)',
+                    saveError: 'Save error: ',
+                    imageError: 'Image processing error: ',
+                    exportEmpty: 'Database is empty. Nothing to export.',
+                    exportError: 'Export error: ',
+                    importNotValid: 'File must be a ZIP archive or a JSON array of items',
+                    importSuccess: 'Imported items: ',
+                    importError: 'Import error: ',
+                    initError: 'Failed to initialize database: ',
+                    noName: 'Untitled',
+                    photoAlt: 'Photo ',
+                    photosCount: ' photos',
+                    labelCustomRate: 'Custom rate (1 GMD = ? USD)',
+                    saveRate: '💾 Save custom rate',
+                    updateRate: '🔄 Update from internet',
+                    rateSourceDefault: 'Source: default',
+                    rateSourceManual: 'Source: manual',
+                    rateSourceApi: 'Source: internet',
+                    rateUpdated: 'Rate updated from internet',
+                    rateSaved: 'Custom rate saved',
+                    rateUpdateError: 'Could not fetch rate. Check internet connection.',
+                    settingsNote: 'Catalog data is stored locally in your browser (IndexedDB) and survives page reloads and most updates. Always keep a ZIP backup for transferring to another device.',
+                    rateDisplay: '1 GMD = {rate} USD',
+                    viewLabel: 'View: ',
+                    viewLarge: 'Large cards',
+                    viewTwo: '2 per row',
+                    viewFour: '4 per row',
+                    viewList: 'Compact list',
+                    exportsTitle: 'Last exports',
+                    exportsEmpty: 'No exports yet.',
+                    exportDownload: '⬇ Download',
+                    exportDone: 'Export complete\n\nFile: {name}\nSize: {size}\n\nThe last 2 archives are kept in the app (Settings). Older copies are removed from the app storage.',
+                    exportRestoreError: 'This archive copy is no longer available.'
+                },
+                ru: {
+                    title: '📦 Сувениры',
+                    pageTitle: 'Каталог сувениров',
+                    searchPlaceholder: 'Поиск по названию или описанию...',
+                    export: '📤 Экспорт',
+                    exportTitle: 'Экспорт каталога в ZIP-архив',
+                    import: '📥 Импорт',
+                    importTitle: 'Импорт каталога из ZIP или JSON',
+                    addItem: '➕ Добавить товар',
+                    settingsTitle: 'Настройки',
+                    emptyText: 'Нет товаров. Добавьте первый!',
+                    modalNew: 'Новый товар',
+                    modalEdit: 'Редактировать товар',
+                    labelName: 'Название *',
+                    namePlaceholder: 'Название сувенира',
+                    labelPrice: 'Цена (GMD) *',
+                    labelPriceUsd: '≈ USD (авто)',
+                    labelWeight: 'Вес (г)',
+                    weightPlaceholder: 'например, 500',
+                    labelWeightKg: '≈ кг (авто)',
+                    labelDimensions: 'Габаритные размеры (см)',
+                    lengthPlaceholder: 'Длина, см',
+                    widthPlaceholder: 'Ширина, см',
+                    heightPlaceholder: 'Высота, см',
+                    labelMaterials: 'Материалы',
+                    materialsPlaceholder: 'например, эбеновое дерево, рафия, ракушки каури',
+                    materialsIcon: '🧵 ',
+                    labelDescription: 'Описание',
+                    descPlaceholder: 'История, материалы, особенности...',
+                    labelPhotos: 'Фотографии',
+                    gallery: 'Галерея',
+                    camera: 'Камера',
+                    saved: '✓ Сохранено',
+                    saving: 'Сохранение…',
+                    edit: '✎ Изменить',
+                    delete: '🗑 Удалить',
+                    priceNotSet: 'Цена не указана',
+                    currency: ' GMD',
+                    weightIcon: '⚖️ ',
+                    gramsShort: ' г',
+                    kgShort: ' кг',
+                    dimsIcon: '📐 ',
+                    dimsUnit: ' см',
+                    lengthShort: 'Д: ',
+                    widthShort: 'Ш: ',
+                    heightShort: 'В: ',
+                    added: 'Добавлено: ',
+                    confirmDelete: 'Удалить этот товар?',
+                    deleteError: 'Ошибка удаления: ',
+                    loadError: 'Не удалось загрузить данные: ',
+                    nameRequired: 'Введите название товара',
+                    priceInvalid: 'Введите корректную цену (число ≥ 0)',
+                    saveError: 'Ошибка сохранения: ',
+                    imageError: 'Ошибка обработки изображения: ',
+                    exportEmpty: 'База пуста. Нечего экспортировать.',
+                    exportError: 'Ошибка экспорта: ',
+                    importNotValid: 'Файл должен быть ZIP-архивом или JSON-массивом товаров',
+                    importSuccess: 'Импортировано товаров: ',
+                    importError: 'Ошибка импорта: ',
+                    initError: 'Не удалось инициализировать базу данных: ',
+                    noName: 'Без названия',
+                    photoAlt: 'Фото ',
+                    photosCount: ' фото',
+                    labelCustomRate: 'Свой курс (1 GMD = ? USD)',
+                    saveRate: '💾 Сохранить свой курс',
+                    updateRate: '🔄 Обновить из интернета',
+                    rateSourceDefault: 'Источник: по умолчанию',
+                    rateSourceManual: 'Источник: вручную',
+                    rateSourceApi: 'Источник: интернет',
+                    rateUpdated: 'Курс обновлён из интернета',
+                    rateSaved: 'Свой курс сохранён',
+                    rateUpdateError: 'Не удалось получить курс. Проверьте интернет.',
+                    settingsNote: 'Данные каталога хранятся локально в браузере (IndexedDB) и сохраняются при перезагрузке и большинстве обновлений. Всегда делайте ZIP-бэкап для переноса на другое устройство.',
+                    rateDisplay: '1 GMD = {rate} USD',
+                    viewLabel: 'Вид: ',
+                    viewLarge: 'Крупные карточки',
+                    viewTwo: '2 в ряд',
+                    viewFour: '4 в ряд',
+                    viewList: 'Компактный список',
+                    exportsTitle: 'Последние экспорты',
+                    exportsEmpty: 'Экспортов пока нет.',
+                    exportDownload: '⬇ Скачать',
+                    exportDone: 'Экспорт выполнен\n\nФайл: {name}\nРазмер: {size}\n\nПоследние 2 архива хранятся в приложении (Настройки). Более старые копии удаляются из хранилища.',
+                    exportRestoreError: 'Эта копия архива больше недоступна.'
+                }
+            };
+
+            let currentLang = localStorage.getItem('souvenirs_lang') || 'en';
+            function t(key) {
+                return translations[currentLang][key] || translations.en[key] || key;
+            }
+
+            const DEFAULT_RATE = 0.0165;
+            let exchangeRate = DEFAULT_RATE;
+            let rateSource = 'default';
+            let rateUpdatedAt = null;
+
+            function loadRate() {
+                try {
+                    const raw = localStorage.getItem('souvenirs_rate');
+                    if (raw) {
+                        const obj = JSON.parse(raw);
+                        if (obj && typeof obj.rate === 'number' && obj.rate > 0) {
+                            exchangeRate = obj.rate;
+                            rateSource = obj.source || 'manual';
+                            rateUpdatedAt = obj.updated || null;
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            function saveRate(rate, source) {
+                exchangeRate = rate;
+                rateSource = source;
+                rateUpdatedAt = new Date().toISOString();
+                localStorage.setItem('souvenirs_rate', JSON.stringify({
+                    rate: exchangeRate,
+                    source: rateSource,
+                    updated: rateUpdatedAt
+                }));
+                updateRateUI();
+                applySearch();
+                updateFormUsdPreview();
+            }
+
+            function updateRateUI() {
+                const rateEl = document.getElementById('rate-display');
+                const sourceEl = document.getElementById('rate-source-text');
+                if (rateEl) rateEl.textContent = t('rateDisplay').replace('{rate}', exchangeRate.toFixed(6));
+                if (sourceEl) {
+                    let srcText = t('rateSourceDefault');
+                    if (rateSource === 'manual') srcText = t('rateSourceManual');
+                    if (rateSource === 'api') srcText = t('rateSourceApi');
+                    if (rateUpdatedAt) {
+                        const d = new Date(rateUpdatedAt);
+                        const locale = currentLang === 'ru' ? 'ru-RU' : 'en-US';
+                        srcText += ' · ' + d.toLocaleString(locale);
+                    }
+                    sourceEl.textContent = srcText;
+                }
+                const input = document.getElementById('f-custom-rate');
+                if (input) input.value = exchangeRate;
+            }
+
+            async function fetchRateFromApi() {
+                const urls = [
+                    'https://open.er-api.com/v6/latest/GMD',
+                    'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/gmd.min.json'
+                ];
+                for (const url of urls) {
+                    try {
+                        const res = await fetch(url, { cache: 'no-store' });
+                        if (!res.ok) continue;
+                        const data = await res.json();
+                        let rate = null;
+                        if (data.rates && data.rates.USD) rate = data.rates.USD;
+                        else if (data.gmd && data.gmd.usd) rate = data.gmd.usd;
+                        if (rate && rate > 0) {
+                            saveRate(rate, 'api');
+                            return true;
+                        }
+                    } catch (e) {
+                        console.warn('Rate fetch failed:', url, e);
+                    }
+                }
+                return false;
+            }
+
+            function gmdToUsd(gmd) {
+                if (gmd == null || isNaN(gmd)) return null;
+                return parseFloat(gmd) * exchangeRate;
+            }
+
+            function formatUsd(val) {
+                if (val == null || isNaN(val)) return '—';
+                return '$' + val.toFixed(2);
+            }
+
+            function setLanguage(lang) {
+                if (!translations[lang]) return;
+                currentLang = lang;
+                localStorage.setItem('souvenirs_lang', lang);
+                document.documentElement.lang = lang;
+                applyTranslations();
+                document.querySelectorAll('#lang-switch button').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.lang === lang);
+                });
+                applySearch();
+                updateRateUI();
+            }
+
+            function applyTranslations() {
+                document.title = t('pageTitle');
+                document.getElementById('app-title').textContent = t('title');
+                document.getElementById('search-input').placeholder = t('searchPlaceholder');
+                document.getElementById('export-btn').textContent = t('export');
+                document.getElementById('export-btn').title = t('exportTitle');
+                document.getElementById('import-btn').textContent = t('import');
+                document.getElementById('import-btn').title = t('importTitle');
+                document.getElementById('add-btn').textContent = t('addItem');
+                document.getElementById('empty-text').textContent = t('emptyText');
+                document.getElementById('settings-title').textContent = t('settingsTitle');
+                document.getElementById('label-custom-rate').textContent = t('labelCustomRate');
+                document.getElementById('save-rate-btn').textContent = t('saveRate');
+                document.getElementById('update-rate-btn').textContent = t('updateRate');
+                document.getElementById('settings-note').textContent = t('settingsNote');
+                document.getElementById('label-name').textContent = t('labelName');
+                document.getElementById('f-name').placeholder = t('namePlaceholder');
+                document.getElementById('label-price').textContent = t('labelPrice');
+                document.getElementById('label-price-usd').textContent = t('labelPriceUsd');
+                document.getElementById('label-weight').textContent = t('labelWeight');
+                document.getElementById('label-weight-kg').textContent = t('labelWeightKg');
+                document.getElementById('f-weight').placeholder = t('weightPlaceholder');
+                document.getElementById('label-materials').textContent = t('labelMaterials');
+                document.getElementById('f-materials').placeholder = t('materialsPlaceholder');
+                document.getElementById('exports-title').textContent = t('exportsTitle');
+                document.getElementById('label-dimensions').textContent = t('labelDimensions');
+                document.getElementById('f-length').placeholder = t('lengthPlaceholder');
+                document.getElementById('f-width').placeholder = t('widthPlaceholder');
+                document.getElementById('f-height').placeholder = t('heightPlaceholder');
+                document.getElementById('label-description').textContent = t('labelDescription');
+                document.getElementById('f-description').placeholder = t('descPlaceholder');
+                document.getElementById('label-photos').textContent = t('labelPhotos');
+                document.getElementById('text-gallery').textContent = t('gallery');
+                document.getElementById('text-camera').textContent = t('camera');
+                updateViewButton();
+                renderExportHistory();
+                if (editingItem) {
+                    document.getElementById('modal-title').textContent = t('modalEdit');
+                } else {
+                    document.getElementById('modal-title').textContent = t('modalNew');
+                }
+            }
+
+            const DB_NAME = 'SouvenirsCatalog';
+            const STORE_NAME = 'items';
+            const EXPORT_STORE = 'exports';
+            const EXPORT_KEEP = 2;
+            let db = null;
+            let exportsAvailable = false;
+
+            function createStores(target) {
+                if (!target.objectStoreNames.contains(STORE_NAME)) {
+                    const store = target.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    store.createIndex('name', 'name', { unique: false });
+                    store.createIndex('description', 'description', { unique: false });
+                }
+                if (!target.objectStoreNames.contains(EXPORT_STORE)) {
+                    target.createObjectStore(EXPORT_STORE, { keyPath: 'id' });
+                }
+            }
+            function attach(instance) {
+                db = instance;
+                exportsAvailable = db.objectStoreNames.contains(EXPORT_STORE);
+                db.onversionchange = () => { try { db.close(); } catch (e) {} db = null; };
+                return db;
+            }
+            /* Opens the catalog without demanding a fixed version, so an older or
+               newer database on the device can never leave the app without storage. */
+            function openDB() {
+                return new Promise((resolve, reject) => {
+                    let settled = false;
+                    const finish = (value) => { if (!settled) { settled = true; resolve(value); } };
+                    const fail = (err) => { if (!settled) { settled = true; reject(err || new Error('IndexedDB unavailable')); } };
+                    let first;
+                    try { first = indexedDB.open(DB_NAME); } catch (e) { return fail(e); }
+                    first.onerror = () => fail(first.error);
+                    first.onblocked = () => fail(new Error('database is open in another tab'));
+                    first.onupgradeneeded = (event) => createStores(event.target.result);
+                    first.onsuccess = () => {
+                        const inst = first.result;
+                        if (inst.objectStoreNames.contains(STORE_NAME) && inst.objectStoreNames.contains(EXPORT_STORE)) {
+                            return finish(attach(inst));
+                        }
+                        const nextVersion = inst.version + 1;
+                        try { inst.close(); } catch (e) {}
+                        let upgrade;
+                        try { upgrade = indexedDB.open(DB_NAME, nextVersion); } catch (e) { return fail(e); }
+                        upgrade.onupgradeneeded = (event) => createStores(event.target.result);
+                        upgrade.onsuccess = () => finish(attach(upgrade.result));
+                        const fallback = () => {
+                            /* upgrade refused (another tab, quota, private mode):
+                               reopen as-is so the catalog keeps working without export history */
+                            const plain = indexedDB.open(DB_NAME);
+                            plain.onsuccess = () => finish(attach(plain.result));
+                            plain.onerror = () => fail(plain.error);
+                        };
+                        upgrade.onerror = fallback;
+                        upgrade.onblocked = fallback;
+                    };
+                });
+            }
+            /* every read/write goes through this, so a closed or missing handle reconnects */
+            async function ensureDB() {
+                if (db) return db;
+                return await openDB();
+            }
+
+            async function getAllItems() {
+                await ensureDB();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction([STORE_NAME], 'readonly');
+                    const store = tx.objectStore(STORE_NAME);
+                    const request = store.getAll();
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result || []);
+                });
+            }
+
+            async function putItem(item) {
+                await ensureDB();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction([STORE_NAME], 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const request = store.put(item);
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result);
+                });
+            }
+
+            async function deleteItemFromDB(id) {
+                await ensureDB();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction([STORE_NAME], 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const request = store.delete(id);
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result);
+                });
+            }
+
+            function generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+            }
+
+            function compressImage(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = new Image();
+                        img.onload = function() {
+                            const maxDim = 1920;
+                            let width = img.width, height = img.height;
+                            if (width > height && width > maxDim) {
+                                height = Math.round(height * maxDim / width);
+                                width = maxDim;
+                            } else if (height > maxDim) {
+                                width = Math.round(width * maxDim / height);
+                                height = maxDim;
+                            }
+                            const canvas = document.createElement('canvas');
+                            canvas.width = width;
+                            canvas.height = height;
+                            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                            resolve(canvas.toDataURL('image/jpeg', 0.8));
+                        };
+                        img.onerror = () => reject(new Error('Image load error'));
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = () => reject(new Error('File read error'));
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            function formatDate(isoString) {
+                if (!isoString) return '';
+                const d = new Date(isoString);
+                const locale = currentLang === 'ru' ? 'ru-RU' : 'en-US';
+                return d.toLocaleDateString(locale) + ' ' + d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+            }
+
+            let allItems = [];
+            let tempPhotos = [];
+            let editingItem = null;
+            let lbPhotos = [];
+            let lbIndex = 0;
+
+            const catalogEl = document.getElementById('catalog');
+            const emptyStateEl = document.getElementById('empty-state');
+            const searchInput = document.getElementById('search-input');
+            const addBtn = document.getElementById('add-btn');
+            const exportBtn = document.getElementById('export-btn');
+            const importBtn = document.getElementById('import-btn');
+            const importFile = document.getElementById('import-file');
+            const settingsBtn = document.getElementById('settings-btn');
+            const modalOverlay = document.getElementById('modal-overlay');
+            const modalClose = document.getElementById('modal-close');
+            const itemForm = document.getElementById('item-form');
+            const modalTitle = document.getElementById('modal-title');
+            const fName = document.getElementById('f-name');
+            const fPrice = document.getElementById('f-price');
+            const fPriceUsd = document.getElementById('f-price-usd');
+            const fWeight = document.getElementById('f-weight');
+            const fWeightKg = document.getElementById('f-weight-kg');
+            const fLength = document.getElementById('f-length');
+            const fWidth = document.getElementById('f-width');
+            const fHeight = document.getElementById('f-height');
+            const fMaterials = document.getElementById('f-materials');
+            const fDescription = document.getElementById('f-description');
+            const fPhotosGallery = document.getElementById('f-photos-gallery');
+            const fPhotosCamera = document.getElementById('f-photos-camera');
+            const btnGallery = document.getElementById('btn-gallery');
+            const btnCamera = document.getElementById('btn-camera');
+            const photoPreview = document.getElementById('photo-preview');
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            const lightboxClose = document.getElementById('lightbox-close');
+            const lightboxPrev = document.getElementById('lightbox-prev');
+            const lightboxNext = document.getElementById('lightbox-next');
+            const lightboxCounter = document.getElementById('lightbox-counter');
+            const lightboxThumbs = document.getElementById('lightbox-thumbs');
+            const lightboxThumbsInner = document.getElementById('lightbox-thumbs-inner');
+            const settingsOverlay = document.getElementById('settings-overlay');
+            const settingsClose = document.getElementById('settings-close');
+            const fCustomRate = document.getElementById('f-custom-rate');
+            const saveRateBtn = document.getElementById('save-rate-btn');
+            const updateRateBtn = document.getElementById('update-rate-btn');
+            const viewBtn = document.getElementById('view-btn');
+            const saveState = document.getElementById('save-state');
+            const exportListEl = document.getElementById('export-list');
+
+            const VIEW_ORDER = ['large', 'two', 'four', 'list'];
+            const VIEW_ICON = { large: '▦', two: '◫', four: '▩', list: '☰' };
+            const VIEW_LABEL = { large: 'viewLarge', two: 'viewTwo', four: 'viewFour', list: 'viewList' };
+            let currentView = localStorage.getItem('souvenirs_view') || 'large';
+            if (VIEW_ORDER.indexOf(currentView) === -1) currentView = 'large';
+
+            function updateViewButton() {
+                if (!viewBtn) return;
+                viewBtn.textContent = VIEW_ICON[currentView];
+                viewBtn.title = t('viewLabel') + t(VIEW_LABEL[currentView]);
+            }
+
+            function renderCatalog(items) {
+                catalogEl.innerHTML = '';
+                catalogEl.className = 'catalog view-' + currentView;
+                if (!items || items.length === 0) {
+                    emptyStateEl.style.display = 'block';
+                    catalogEl.style.display = 'none';
+                    return;
+                }
+                emptyStateEl.style.display = 'none';
+                catalogEl.style.display = (currentView === 'list') ? 'flex' : 'grid';
+                items.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
+                items.forEach(item => catalogEl.appendChild(
+                    currentView === 'list' ? createListRow(item) : createCard(item)
+                ));
+            }
+
+            function itemMetaText(item) {
+                const parts = [];
+                if (item.weight) {
+                    const g = parseFloat(String(item.weight).replace(',', '.'));
+                    parts.push(t('weightIcon') + (isFinite(g) ? g + t('gramsShort') : item.weight));
+                }
+                const dims = [];
+                if (item.dimensions) {
+                    if (item.dimensions.length) dims.push(t('lengthShort') + item.dimensions.length);
+                    if (item.dimensions.width) dims.push(t('widthShort') + item.dimensions.width);
+                    if (item.dimensions.height) dims.push(t('heightShort') + item.dimensions.height);
+                }
+                if (dims.length) parts.push(t('dimsIcon') + dims.join(' \u00D7 ') + t('dimsUnit'));
+                if (item.materials) parts.push(t('materialsIcon') + item.materials);
+                return parts;
+            }
+
+            function makeActions(item) {
+                const actions = document.createElement('div');
+                actions.className = 'card-actions';
+                const editBtn = document.createElement('button');
+                editBtn.className = 'edit-btn';
+                editBtn.innerHTML = t('edit');
+                editBtn.addEventListener('click', (e) => { e.stopPropagation(); openEditForm(item); });
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.innerHTML = t('delete');
+                deleteBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if (confirm(t('confirmDelete'))) {
+                        try {
+                            await deleteItemFromDB(item.id);
+                            await refreshCatalog();
+                        } catch (err) { alert(t('deleteError') + err.message); }
+                    }
+                });
+                actions.appendChild(editBtn);
+                actions.appendChild(deleteBtn);
+                return actions;
+            }
+
+            function createListRow(item) {
+                const photos = (item.photos && item.photos.length) ? item.photos : [];
+                const row = document.createElement('div');
+                row.className = 'list-row';
+                row.dataset.id = item.id;
+
+                const head = document.createElement('div');
+                head.className = 'list-row-head';
+                const thumb = document.createElement('div');
+                thumb.className = 'list-thumb' + (photos.length ? '' : ' placeholder');
+                if (photos.length) thumb.style.backgroundImage = `url('${photos[0]}')`;
+                thumb.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (photos.length) openLightbox(photos, 0);
+                });
+                const main = document.createElement('div');
+                main.className = 'list-main';
+                const title = document.createElement('div');
+                title.className = 'list-title';
+                title.textContent = item.name || t('noName');
+                const sub = document.createElement('div');
+                sub.className = 'list-sub';
+                const usdVal = gmdToUsd(item.price);
+                sub.innerHTML = '<b>' + (item.price != null ? parseFloat(item.price).toFixed(2) + t('currency') : t('priceNotSet')) + '</b>'
+                    + (usdVal != null ? ' \u00B7 \u2248 ' + formatUsd(usdVal) : '')
+                    + (photos.length > 1 ? ' \u00B7 ' + photos.length + t('photosCount') : '');
+                main.appendChild(title);
+                main.appendChild(sub);
+                const arrow = document.createElement('span');
+                arrow.className = 'list-arrow';
+                arrow.textContent = '\u25BE';
+                head.appendChild(thumb);
+                head.appendChild(main);
+                head.appendChild(arrow);
+
+                const body = document.createElement('div');
+                body.className = 'list-body hidden';
+                if (photos.length) {
+                    const strip = document.createElement('div');
+                    strip.className = 'list-photos';
+                    photos.forEach((src, i) => {
+                        const img = document.createElement('img');
+                        img.src = src;
+                        img.alt = t('photoAlt') + (i + 1);
+                        img.addEventListener('click', (e) => { e.stopPropagation(); openLightbox(photos, i); });
+                        strip.appendChild(img);
+                    });
+                    body.appendChild(strip);
+                }
+                const metaParts = itemMetaText(item);
+                if (metaParts.length) {
+                    const meta = document.createElement('div');
+                    meta.className = 'card-meta';
+                    meta.style.paddingTop = photos.length ? '0' : '12px';
+                    metaParts.forEach(txt => {
+                        const sp = document.createElement('span');
+                        sp.textContent = txt;
+                        meta.appendChild(sp);
+                    });
+                    body.appendChild(meta);
+                }
+                if (item.description) {
+                    const desc = document.createElement('div');
+                    desc.style.fontSize = '0.9rem';
+                    desc.style.whiteSpace = 'pre-wrap';
+                    desc.textContent = item.description;
+                    body.appendChild(desc);
+                }
+                const dateDiv = document.createElement('div');
+                dateDiv.className = 'card-date';
+                dateDiv.textContent = t('added') + formatDate(item.dateAdded);
+                body.appendChild(dateDiv);
+                body.appendChild(makeActions(item));
+
+                head.addEventListener('click', () => {
+                    const isOpen = row.classList.contains('open');
+                    catalogEl.querySelectorAll('.list-row.open').forEach(r => {
+                        r.classList.remove('open');
+                        const b = r.querySelector('.list-body');
+                        if (b) b.classList.add('hidden');
+                    });
+                    if (!isOpen) {
+                        row.classList.add('open');
+                        body.classList.remove('hidden');
+                    }
+                });
+
+                row.appendChild(head);
+                row.appendChild(body);
+                return row;
+            }
+
+            function createCard(item) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.id = item.id;
+                const photoDiv = document.createElement('div');
+                const photos = (item.photos && item.photos.length) ? item.photos : [];
+                if (photos.length > 0 && photos[0]) {
+                    photoDiv.className = 'card-photo';
+                    photoDiv.style.backgroundImage = `url('${photos[0]}')`;
+                    if (photos.length > 1) {
+                        const countBadge = document.createElement('div');
+                        countBadge.className = 'card-photo-count';
+                        countBadge.textContent = photos.length + t('photosCount');
+                        photoDiv.appendChild(countBadge);
+                    }
+                } else {
+                    photoDiv.className = 'card-photo placeholder';
+                }
+                photoDiv.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (photos.length > 0) openLightbox(photos, 0);
+                });
+                const body = document.createElement('div');
+                body.className = 'card-body';
+                const title = document.createElement('h3');
+                title.className = 'card-title';
+                title.textContent = item.name || t('noName');
+                body.appendChild(title);
+                const price = document.createElement('div');
+                price.className = 'card-price';
+                price.textContent = item.price != null ? parseFloat(item.price).toFixed(2) + t('currency') : t('priceNotSet');
+                body.appendChild(price);
+                const priceUsd = document.createElement('div');
+                priceUsd.className = 'card-price-usd';
+                const usdVal = gmdToUsd(item.price);
+                priceUsd.textContent = usdVal != null ? '≈ ' + formatUsd(usdVal) : '';
+                body.appendChild(priceUsd);
+                const meta = document.createElement('div');
+                meta.className = 'card-meta';
+                itemMetaText(item).forEach(txt => {
+                    const sp = document.createElement('span');
+                    sp.textContent = txt;
+                    meta.appendChild(sp);
+                });
+                body.appendChild(meta);
+                if (item.description) {
+                    const desc = document.createElement('div');
+                    desc.className = 'card-desc';
+                    desc.textContent = item.description;
+                    body.appendChild(desc);
+                }
+                const dateDiv = document.createElement('div');
+                dateDiv.className = 'card-date';
+                dateDiv.textContent = t('added') + formatDate(item.dateAdded);
+                body.appendChild(dateDiv);
+                body.appendChild(makeActions(item));
+                card.appendChild(photoDiv);
+                card.appendChild(body);
+                return card;
+            }
+
+            function refreshCatalog() {
+                return getAllItems().then(items => {
+                    allItems = items;
+                    applySearch();
+                }).catch(err => {
+                    console.error('Catalog load error:', err);
+                    alert(t('loadError') + err.message);
+                });
+            }
+
+            function applySearch() {
+                const query = searchInput.value.trim().toLowerCase();
+                if (!query) {
+                    renderCatalog(allItems);
+                    return;
+                }
+                const filtered = allItems.filter(item => {
+                    const name = (item.name || '').toLowerCase();
+                    const desc = (item.description || '').toLowerCase();
+                    return name.includes(query) || desc.includes(query);
+                });
+                renderCatalog(filtered);
+            }
+
+            function updateFormUsdPreview() {
+                const val = parseFloat(fPrice.value);
+                fPriceUsd.value = (val >= 0 && !isNaN(val)) ? formatUsd(gmdToUsd(val)) : '';
+            }
+
+            function updateFormKgPreview() {
+                const g = parseFloat(fWeight.value);
+                fWeightKg.value = (g >= 0 && !isNaN(g)) ? (g / 1000).toFixed(3) + t('kgShort') : '';
+            }
+
+            fPrice.addEventListener('input', updateFormUsdPreview);
+            fWeight.addEventListener('input', updateFormKgPreview);
+
+            let saveStateTimer = null;
+            function showSaveState(text, sticky) {
+                if (!saveState) return;
+                saveState.textContent = text;
+                saveState.classList.add('on');
+                clearTimeout(saveStateTimer);
+                if (!sticky) saveStateTimer = setTimeout(() => saveState.classList.remove('on'), 1800);
+            }
+
+            function formHasContent() {
+                if (tempPhotos.length) return true;
+                return [fName, fPrice, fWeight, fLength, fWidth, fHeight, fMaterials, fDescription]
+                    .some(el => String(el.value).trim() !== '');
+            }
+
+            function collectFormItem() {
+                const g = parseFloat(fWeight.value);
+                const price = parseFloat(fPrice.value);
+                const base = editingItem ? Object.assign({}, editingItem) : {};
+                return Object.assign(base, {
+                    id: editingItem ? editingItem.id : generateId(),
+                    name: fName.value.trim(),
+                    price: (!isNaN(price) && price >= 0) ? price : null,
+                    weight: (!isNaN(g) && g > 0) ? String(g) : '',
+                    dimensions: {
+                        length: fLength.value ? parseFloat(fLength.value) : 0,
+                        width: fWidth.value ? parseFloat(fWidth.value) : 0,
+                        height: fHeight.value ? parseFloat(fHeight.value) : 0
+                    },
+                    materials: fMaterials.value.trim(),
+                    description: fDescription.value.trim(),
+                    dateAdded: (editingItem && editingItem.dateAdded) ? editingItem.dateAdded : new Date().toISOString(),
+                    photos: tempPhotos.slice()
+                });
+            }
+
+            let autoSaveBusy = false;
+            async function autoSave() {
+                if (modalOverlay.classList.contains('hidden')) return;
+                /* an item is stored as soon as anything at all is filled in:
+                   no photo and partial data are perfectly fine */
+                if (!editingItem && !formHasContent()) return;
+                if (autoSaveBusy) return;
+                autoSaveBusy = true;
+                try {
+                    const item = collectFormItem();
+                    showSaveState(t('saving'), true);
+                    await putItem(item);
+                    editingItem = item;
+                    modalTitle.textContent = t('modalEdit');
+                    showSaveState(t('saved'));
+                    await refreshCatalog();
+                } catch (err) {
+                    showSaveState(t('saveError') + err.message, true);
+                } finally {
+                    autoSaveBusy = false;
+                }
+            }
+
+            [fName, fPrice, fWeight, fLength, fWidth, fHeight, fMaterials, fDescription].forEach(el => {
+                el.addEventListener('change', autoSave);
+                el.addEventListener('blur', autoSave);
+            });
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') autoSave();
+            });
+            window.addEventListener('pagehide', () => { autoSave(); });
+
+            function openAddForm() {
+                editingItem = null;
+                tempPhotos = [];
+                modalTitle.textContent = t('modalNew');
+                fName.value = '';
+                fPrice.value = '';
+                fPriceUsd.value = '';
+                fWeight.value = '';
+                fWeightKg.value = '';
+                fLength.value = '';
+                fWidth.value = '';
+                fHeight.value = '';
+                fMaterials.value = '';
+                fDescription.value = '';
+                fPhotosGallery.value = '';
+                fPhotosCamera.value = '';
+                if (saveState) { saveState.textContent = ''; saveState.classList.remove('on'); }
+                updatePhotoPreview();
+                modalOverlay.classList.remove('hidden');
+                fName.focus();
+            }
+
+            function openEditForm(item) {
+                editingItem = item;
+                tempPhotos = Array.isArray(item.photos) ? [...item.photos] : [];
+                modalTitle.textContent = t('modalEdit');
+                fName.value = item.name || '';
+                fPrice.value = item.price || '';
+                updateFormUsdPreview();
+                fWeight.value = item.weight ? (parseFloat(item.weight) || '') : '';
+                updateFormKgPreview();
+                fLength.value = item.dimensions?.length || '';
+                fWidth.value = item.dimensions?.width || '';
+                fHeight.value = item.dimensions?.height || '';
+                fMaterials.value = item.materials || '';
+                fDescription.value = item.description || '';
+                if (saveState) { saveState.textContent = ''; saveState.classList.remove('on'); }
+                fPhotosGallery.value = '';
+                fPhotosCamera.value = '';
+                updatePhotoPreview();
+                modalOverlay.classList.remove('hidden');
+            }
+
+            async function closeForm() {
+                await autoSave();
+                modalOverlay.classList.add('hidden');
+                editingItem = null;
+                tempPhotos = [];
+                if (saveState) { saveState.textContent = ''; saveState.classList.remove('on'); }
+            }
+
+            function updatePhotoPreview() {
+                photoPreview.innerHTML = '';
+                tempPhotos.forEach((photo, index) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'photo-thumb-wrapper';
+                    const img = document.createElement('img');
+                    img.className = 'photo-thumb';
+                    img.src = photo;
+                    img.alt = t('photoAlt') + (index + 1);
+                    img.addEventListener('click', () => openLightbox(tempPhotos, index));
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'photo-remove';
+                    removeBtn.innerHTML = '×';
+                    removeBtn.type = 'button';
+                    removeBtn.addEventListener('click', () => {
+                        tempPhotos.splice(index, 1);
+                        updatePhotoPreview();
+                        autoSave();
+                    });
+                    wrapper.appendChild(img);
+                    wrapper.appendChild(removeBtn);
+                    photoPreview.appendChild(wrapper);
+                });
+            }
+
+            async function handlePhotoFiles(files) {
+                if (!files || files.length === 0) return;
+                try {
+                    for (const file of files) {
+                        tempPhotos.push(await compressImage(file));
+                    }
+                    updatePhotoPreview();
+                    await autoSave();
+                } catch (err) {
+                    alert(t('imageError') + err.message);
+                }
+            }
+
+            btnGallery.addEventListener('click', () => fPhotosGallery.click());
+            btnCamera.addEventListener('click', () => fPhotosCamera.click());
+            fPhotosGallery.addEventListener('change', async (e) => {
+                await handlePhotoFiles(Array.from(e.target.files));
+                fPhotosGallery.value = '';
+            });
+            fPhotosCamera.addEventListener('change', async (e) => {
+                await handlePhotoFiles(Array.from(e.target.files));
+                fPhotosCamera.value = '';
+            });
+
+            itemForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await closeForm();
+            });
+
+            function openSettings() {
+                updateRateUI();
+                settingsOverlay.classList.remove('hidden');
+            }
+            function closeSettings() {
+                settingsOverlay.classList.add('hidden');
+            }
+            settingsBtn.addEventListener('click', openSettings);
+            settingsClose.addEventListener('click', closeSettings);
+            settingsOverlay.addEventListener('click', (e) => {
+                if (e.target === settingsOverlay) closeSettings();
+            });
+            saveRateBtn.addEventListener('click', () => {
+                const val = parseFloat(fCustomRate.value);
+                if (!val || val <= 0 || isNaN(val)) { alert(t('priceInvalid')); return; }
+                saveRate(val, 'manual');
+                alert(t('rateSaved'));
+            });
+            updateRateBtn.addEventListener('click', async () => {
+                updateRateBtn.disabled = true;
+                updateRateBtn.textContent = '...';
+                const ok = await fetchRateFromApi();
+                updateRateBtn.disabled = false;
+                updateRateBtn.textContent = t('updateRate');
+                alert(ok ? t('rateUpdated') : t('rateUpdateError'));
+            });
+
+            function openLightbox(photos, startIndex = 0) {
+                if (!photos || photos.length === 0) return;
+                lbPhotos = photos;
+                lbIndex = Math.max(0, Math.min(startIndex, photos.length - 1));
+                updateLightbox();
+                lightbox.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.add('hidden');
+                lightboxImg.src = '';
+                lbPhotos = [];
+                lbIndex = 0;
+                document.body.style.overflow = '';
+            }
+            function updateLightbox() {
+                if (lbPhotos.length === 0) return;
+                lightboxImg.src = lbPhotos[lbIndex];
+                lightboxCounter.textContent = (lbIndex + 1) + ' / ' + lbPhotos.length;
+                const multi = lbPhotos.length > 1;
+                lightboxPrev.classList.toggle('hidden', !multi);
+                lightboxNext.classList.toggle('hidden', !multi);
+                lightboxCounter.style.display = multi ? 'block' : 'none';
+                lightboxThumbs.classList.toggle('hidden', !multi);
+                if (!multi) { lightboxThumbsInner.innerHTML = ''; return; }
+                if (lightboxThumbsInner.childElementCount !== lbPhotos.length) {
+                    lightboxThumbsInner.innerHTML = '';
+                    lbPhotos.forEach((src, i) => {
+                        const th = document.createElement('img');
+                        th.src = src;
+                        th.alt = t('photoAlt') + (i + 1);
+                        th.dataset.i = i;
+                        th.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            lbIndex = i;
+                            updateLightbox();
+                        });
+                        lightboxThumbsInner.appendChild(th);
+                    });
+                }
+                Array.prototype.forEach.call(lightboxThumbsInner.children, (el, i) => {
+                    el.classList.toggle('active', i === lbIndex);
+                    if (i === lbIndex && el.scrollIntoView) {
+                        el.scrollIntoView({ block: 'nearest', inline: 'center' });
+                    }
+                });
+            }
+            function lightboxPrevFn(e) {
+                if (e) e.stopPropagation();
+                if (lbPhotos.length <= 1) return;
+                lbIndex = (lbIndex - 1 + lbPhotos.length) % lbPhotos.length;
+                updateLightbox();
+            }
+            function lightboxNextFn(e) {
+                if (e) e.stopPropagation();
+                if (lbPhotos.length <= 1) return;
+                lbIndex = (lbIndex + 1) % lbPhotos.length;
+                updateLightbox();
+            }
+            lightboxPrev.addEventListener('click', lightboxPrevFn);
+            lightboxNext.addEventListener('click', lightboxNextFn);
+            lightboxClose.addEventListener('click', (e) => { e.stopPropagation(); closeLightbox(); });
+            lightbox.addEventListener('click', (e) => {
+                if (e.target.closest && e.target.closest('.lightbox-thumbs')) return;
+                if (e.target === lightbox || e.target.classList.contains('lightbox-inner')) closeLightbox();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (lightbox.classList.contains('hidden')) return;
+                if (e.key === 'Escape') closeLightbox();
+                if (e.key === 'ArrowLeft') lightboxPrevFn();
+                if (e.key === 'ArrowRight') lightboxNextFn();
+            });
+            let touchStartX = 0;
+            lightbox.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+            lightbox.addEventListener('touchend', (e) => {
+                const diff = touchStartX - e.changedTouches[0].screenX;
+                if (Math.abs(diff) > 50) { if (diff > 0) lightboxNextFn(); else lightboxPrevFn(); }
+            }, { passive: true });
+
+
+            /* ---------- offline ZIP writer / reader (no external library) ---------- */
+            const CRC_TABLE = (function() {
+                const t = new Uint32Array(256);
+                for (let n = 0; n < 256; n++) {
+                    let c = n;
+                    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+                    t[n] = c >>> 0;
+                }
+                return t;
+            })();
+            function crc32(u8) {
+                let c = 0xFFFFFFFF;
+                for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+                return (c ^ 0xFFFFFFFF) >>> 0;
+            }
+            async function deflateRaw(u8) {
+                if (typeof CompressionStream === 'undefined') return null;
+                try {
+                    const cs = new CompressionStream('deflate-raw');
+                    const stream = new Blob([u8]).stream().pipeThrough(cs);
+                    return new Uint8Array(await new Response(stream).arrayBuffer());
+                } catch (e) { return null; }
+            }
+            /* pure-JS inflate: archives from any older version stay importable
+               even offline and on browsers without DecompressionStream */
+            function inflateRawJS(data) {
+                let pos = 0, bitBuf = 0, bitCnt = 0;
+                let out = new Uint8Array(Math.max(1024, data.length * 4)), outLen = 0;
+                function need(n) {
+                    if (outLen + n <= out.length) return;
+                    let size = out.length;
+                    while (size < outLen + n) size *= 2;
+                    const bigger = new Uint8Array(size);
+                    bigger.set(out.subarray(0, outLen));
+                    out = bigger;
+                }
+                function bits(n) {
+                    while (bitCnt < n) {
+                        if (pos >= data.length) throw new Error('unexpected end of compressed data');
+                        bitBuf |= data[pos++] << bitCnt;
+                        bitCnt += 8;
+                    }
+                    const v = bitBuf & ((1 << n) - 1);
+                    bitBuf >>>= n; bitCnt -= n;
+                    return v;
+                }
+                function buildTree(lengths) {
+                    const maxBits = Math.max.apply(null, Array.prototype.slice.call(lengths));
+                    const blCount = new Int32Array(maxBits + 1);
+                    for (let i = 0; i < lengths.length; i++) if (lengths[i]) blCount[lengths[i]]++;
+                    const nextCode = new Int32Array(maxBits + 2);
+                    let code = 0;
+                    for (let b = 1; b <= maxBits; b++) { code = (code + blCount[b - 1]) << 1; nextCode[b] = code; }
+                    const map = new Map();
+                    for (let i = 0; i < lengths.length; i++) {
+                        const len = lengths[i];
+                        if (!len) continue;
+                        map.set(len + ':' + (nextCode[len]++), i);
+                    }
+                    return { map: map, maxBits: maxBits };
+                }
+                function decodeSym(tree) {
+                    let code = 0;
+                    for (let len = 1; len <= tree.maxBits; len++) {
+                        code = (code << 1) | bits(1);
+                        const sym = tree.map.get(len + ':' + code);
+                        if (sym !== undefined) return sym;
+                    }
+                    throw new Error('bad Huffman code');
+                }
+                const LBASE = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+                const LEXT  = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0];
+                const DBASE = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+                const DEXT  = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+                const ORDER = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+                let fixedLit = null, fixedDist = null;
+                for (;;) {
+                    const last = bits(1), type = bits(2);
+                    if (type === 0) {
+                        bitBuf = 0; bitCnt = 0;
+                        const len = data[pos] | (data[pos + 1] << 8);
+                        pos += 4;
+                        need(len);
+                        out.set(data.subarray(pos, pos + len), outLen);
+                        outLen += len; pos += len;
+                    } else {
+                        let litTree, distTree;
+                        if (type === 1) {
+                            if (!fixedLit) {
+                                const l = new Uint8Array(288);
+                                for (let i = 0; i < 144; i++) l[i] = 8;
+                                for (let i = 144; i < 256; i++) l[i] = 9;
+                                for (let i = 256; i < 280; i++) l[i] = 7;
+                                for (let i = 280; i < 288; i++) l[i] = 8;
+                                fixedLit = buildTree(l);
+                                fixedDist = buildTree(new Uint8Array(30).fill(5));
+                            }
+                            litTree = fixedLit; distTree = fixedDist;
+                        } else if (type === 2) {
+                            const hlit = bits(5) + 257, hdist = bits(5) + 1, hclen = bits(4) + 4;
+                            const clLens = new Uint8Array(19);
+                            for (let i = 0; i < hclen; i++) clLens[ORDER[i]] = bits(3);
+                            const clTree = buildTree(clLens);
+                            const lens = new Uint8Array(hlit + hdist);
+                            let i = 0;
+                            while (i < lens.length) {
+                                const sym = decodeSym(clTree);
+                                if (sym < 16) lens[i++] = sym;
+                                else if (sym === 16) { const prev = lens[i - 1], r = 3 + bits(2); for (let k = 0; k < r; k++) lens[i++] = prev; }
+                                else if (sym === 17) { const r = 3 + bits(3); i += r; }
+                                else { const r = 11 + bits(7); i += r; }
+                            }
+                            litTree = buildTree(lens.subarray(0, hlit));
+                            distTree = buildTree(lens.subarray(hlit));
+                        } else {
+                            throw new Error('invalid deflate block');
+                        }
+                        for (;;) {
+                            const sym = decodeSym(litTree);
+                            if (sym === 256) break;
+                            if (sym < 256) { need(1); out[outLen++] = sym; }
+                            else {
+                                const li = sym - 257;
+                                const length = LBASE[li] + bits(LEXT[li]);
+                                const ds = decodeSym(distTree);
+                                const dist = DBASE[ds] + bits(DEXT[ds]);
+                                need(length);
+                                let from = outLen - dist;
+                                for (let k = 0; k < length; k++) out[outLen++] = out[from++];
+                            }
+                        }
+                    }
+                    if (last) break;
+                }
+                return out.subarray(0, outLen);
+            }
+
+            async function inflateRaw(u8) {
+                if (typeof DecompressionStream !== 'undefined') {
+                    try {
+                        const ds = new DecompressionStream('deflate-raw');
+                        const stream = new Blob([u8]).stream().pipeThrough(ds);
+                        return new Uint8Array(await new Response(stream).arrayBuffer());
+                    } catch (e) { console.warn('native inflate failed, using fallback', e); }
+                }
+                return inflateRawJS(u8);
+            }
+            async function zipBuild(files) {
+                const enc = new TextEncoder();
+                const parts = [], central = [];
+                let offset = 0;
+                const now = new Date();
+                const time = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() / 2)) & 0xFFFF;
+                const date = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+                for (const f of files) {
+                    const nameBytes = enc.encode(f.name);
+                    const raw = f.data;
+                    const crc = crc32(raw);
+                    let method = 0, payload = raw;
+                    if (f.compress !== false) {
+                        const packed = await deflateRaw(raw);
+                        if (packed && packed.length < raw.length) { method = 8; payload = packed; }
+                    }
+                    const utf8 = /[^\x00-\x7F]/.test(f.name) ? 0x800 : 0;
+                    const lh = new DataView(new ArrayBuffer(30));
+                    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, utf8, true);
+                    lh.setUint16(8, method, true); lh.setUint16(10, time, true); lh.setUint16(12, date, true);
+                    lh.setUint32(14, crc, true); lh.setUint32(18, payload.length, true); lh.setUint32(22, raw.length, true);
+                    lh.setUint16(26, nameBytes.length, true); lh.setUint16(28, 0, true);
+                    parts.push(new Uint8Array(lh.buffer), nameBytes, payload);
+                    const ch = new DataView(new ArrayBuffer(46));
+                    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true);
+                    ch.setUint16(8, utf8, true); ch.setUint16(10, method, true); ch.setUint16(12, time, true);
+                    ch.setUint16(14, date, true); ch.setUint32(16, crc, true);
+                    ch.setUint32(20, payload.length, true); ch.setUint32(24, raw.length, true);
+                    ch.setUint16(28, nameBytes.length, true); ch.setUint16(30, 0, true); ch.setUint16(32, 0, true);
+                    ch.setUint16(34, 0, true); ch.setUint16(36, 0, true); ch.setUint32(38, 0, true);
+                    ch.setUint32(42, offset, true);
+                    central.push(new Uint8Array(ch.buffer), nameBytes);
+                    offset += 30 + nameBytes.length + payload.length;
+                }
+                const cdSize = central.reduce((a, b) => a + b.length, 0);
+                const eo = new DataView(new ArrayBuffer(22));
+                eo.setUint32(0, 0x06054b50, true); eo.setUint16(4, 0, true); eo.setUint16(6, 0, true);
+                eo.setUint16(8, files.length, true); eo.setUint16(10, files.length, true);
+                eo.setUint32(12, cdSize, true); eo.setUint32(16, offset, true); eo.setUint16(20, 0, true);
+                return new Blob(parts.concat(central, [new Uint8Array(eo.buffer)]), { type: 'application/zip' });
+            }
+            async function zipRead(arrayBuffer) {
+                const u8 = new Uint8Array(arrayBuffer), dv = new DataView(arrayBuffer);
+                let eocd = -1;
+                for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) {
+                    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+                }
+                if (eocd < 0) throw new Error('Not a ZIP archive');
+                const count = dv.getUint16(eocd + 10, true), cdOff = dv.getUint32(eocd + 16, true);
+                const dec = new TextDecoder('utf-8'), out = new Map();
+                let p = cdOff;
+                for (let i = 0; i < count; i++) {
+                    if (dv.getUint32(p, true) !== 0x02014b50) break;
+                    const method = dv.getUint16(p + 10, true);
+                    const csize = dv.getUint32(p + 20, true);
+                    const nlen = dv.getUint16(p + 28, true), elen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+                    const lo = dv.getUint32(p + 42, true);
+                    const name = dec.decode(u8.subarray(p + 46, p + 46 + nlen));
+                    const lnlen = dv.getUint16(lo + 26, true), lelen = dv.getUint16(lo + 28, true);
+                    const start = lo + 30 + lnlen + lelen;
+                    const raw = u8.subarray(start, start + csize);
+                    if (!name.endsWith('/')) out.set(name, method === 0 ? raw : await inflateRaw(raw));
+                    p += 46 + nlen + elen + clen;
+                }
+                return out;
+            }
+            function dataUrlToBytes(dataUrl) {
+                const m = /^data:([^;,]*)(;base64)?,([\s\S]*)$/.exec(dataUrl || '');
+                if (!m) return null;
+                const mime = m[1] || 'image/jpeg';
+                let bytes;
+                if (m[2]) {
+                    const bin = atob(m[3].replace(/\s/g, ''));
+                    bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                } else {
+                    bytes = new TextEncoder().encode(decodeURIComponent(m[3]));
+                }
+                let ext = 'jpg';
+                if (mime.indexOf('png') > -1) ext = 'png';
+                else if (mime.indexOf('webp') > -1) ext = 'webp';
+                return { bytes, mime, ext };
+            }
+            function bytesToDataUrl(bytes, name) {
+                let bin = '';
+                const chunk = 0x8000;
+                for (let i = 0; i < bytes.length; i += chunk) {
+                    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+                }
+                const lower = (name || '').toLowerCase();
+                const mime = lower.endsWith('.png') ? 'image/png' : (lower.endsWith('.webp') ? 'image/webp' : 'image/jpeg');
+                return 'data:' + mime + ';base64,' + btoa(bin);
+            }
+            function formatSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1048576) return (bytes / 1024).toFixed(0) + ' KB';
+                return (bytes / 1048576).toFixed(2) + ' MB';
+            }
+
+            /* ---------- stored export archives (last 2) ---------- */
+            async function putExport(rec) {
+                await ensureDB();
+                if (!exportsAvailable) return;
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction([EXPORT_STORE], 'readwrite');
+                    const rq = tx.objectStore(EXPORT_STORE).put(rec);
+                    rq.onerror = () => reject(rq.error);
+                    rq.onsuccess = () => resolve();
+                });
+            }
+            function getExports() {
+                return new Promise((resolve, reject) => {
+                    if (!db || !exportsAvailable || !db.objectStoreNames.contains(EXPORT_STORE)) return resolve([]);
+                    const tx = db.transaction([EXPORT_STORE], 'readonly');
+                    const rq = tx.objectStore(EXPORT_STORE).getAll();
+                    rq.onerror = () => reject(rq.error);
+                    rq.onsuccess = () => resolve((rq.result || []).sort((a, b) => new Date(b.date) - new Date(a.date)));
+                });
+            }
+            function deleteExport(id) {
+                if (!db || !exportsAvailable) return Promise.resolve();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction([EXPORT_STORE], 'readwrite');
+                    const rq = tx.objectStore(EXPORT_STORE).delete(id);
+                    rq.onerror = () => reject(rq.error);
+                    rq.onsuccess = () => resolve();
+                });
+            }
+            async function rememberExport(name, blob) {
+                await putExport({ id: generateId(), name, size: blob.size, date: new Date().toISOString(), blob });
+                const list = await getExports();
+                for (let i = EXPORT_KEEP; i < list.length; i++) await deleteExport(list[i].id);
+            }
+            async function renderExportHistory() {
+                if (!exportListEl || !db || !exportsAvailable) return;
+                let list = [];
+                try { list = await getExports(); } catch (e) { return; }
+                exportListEl.innerHTML = '';
+                if (!list.length) {
+                    const p = document.createElement('div');
+                    p.className = 'export-empty';
+                    p.textContent = t('exportsEmpty');
+                    exportListEl.appendChild(p);
+                    return;
+                }
+                list.slice(0, EXPORT_KEEP).forEach(rec => {
+                    const row = document.createElement('div');
+                    row.className = 'export-row';
+                    const main = document.createElement('div');
+                    main.className = 'ex-main';
+                    const nm = document.createElement('div');
+                    nm.className = 'ex-name';
+                    nm.textContent = rec.name;
+                    const mt = document.createElement('div');
+                    mt.className = 'ex-meta';
+                    mt.textContent = formatSize(rec.size) + ' \u00B7 ' + formatDate(rec.date);
+                    main.appendChild(nm);
+                    main.appendChild(mt);
+                    const dl = document.createElement('button');
+                    dl.className = 'btn';
+                    dl.type = 'button';
+                    dl.textContent = t('exportDownload');
+                    dl.addEventListener('click', () => {
+                        if (!rec.blob) { alert(t('exportRestoreError')); return; }
+                        downloadBlob(rec.blob, rec.name);
+                    });
+                    row.appendChild(main);
+                    row.appendChild(dl);
+                    exportListEl.appendChild(row);
+                });
+            }
+
+            exportBtn.addEventListener('click', async () => {
+                try {
+                    const items = await getAllItems();
+                    if (items.length === 0) { alert(t('exportEmpty')); return; }
+                    exportBtn.disabled = true;
+                    const enc = new TextEncoder();
+                    const files = [];
+                    const payloadItems = items.map(item => {
+                        const refs = [];
+                        (item.photos || []).forEach((photo, i) => {
+                            const bin = dataUrlToBytes(photo);
+                            if (!bin) return;
+                            const fname = 'photos/' + item.id + '_' + (i + 1) + '.' + bin.ext;
+                            files.push({ name: fname, data: bin.bytes, compress: false });
+                            refs.push(fname);
+                        });
+                        return Object.assign({}, item, { photos: refs });
+                    });
+                    const payload = {
+                        version: 2,
+                        app: 'SouvenirsCatalog',
+                        exportedAt: new Date().toISOString(),
+                        currency: 'GMD',
+                        exchangeRate,
+                        rateSource,
+                        items: payloadItems
+                    };
+                    files.unshift({ name: 'catalog.json', data: enc.encode(JSON.stringify(payload)) });
+                    files.push({ name: 'README.txt', data: enc.encode(
+                        'Souvenirs Catalog backup\r\n' +
+                        'Items: ' + items.length + '\r\n' +
+                        'Photos are stored as separate JPEG files in photos/ and are referenced from catalog.json.\r\n' +
+                        'Open the HTML app and use Import to restore.\r\n') });
+                    const dateStr = new Date().toISOString().slice(0, 10);
+                    const stamp = new Date().toTimeString().slice(0, 5).replace(':', '');
+                    const fileName = 'souvenirs_catalog_' + dateStr + '_' + stamp + '.zip';
+                    const blob = await zipBuild(files);
+                    downloadBlob(blob, fileName);
+                    try { await rememberExport(fileName, blob); await renderExportHistory(); } catch (e) { console.warn('export history', e); }
+                    alert(t('exportDone').replace('{name}', fileName).replace('{size}', formatSize(blob.size)));
+                } catch (err) {
+                    alert(t('exportError') + err.message);
+                } finally {
+                    exportBtn.disabled = false;
+                }
+            });
+
+            function downloadBlob(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            importBtn.addEventListener('click', () => importFile.click());
+            importFile.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                try {
+                    let items = null;
+                    let zipFiles = null;
+                    const name = (file.name || '').toLowerCase();
+                    if (name.endsWith('.zip') || file.type.includes('zip')) {
+                        zipFiles = await zipRead(await file.arrayBuffer());
+                        let key = null;
+                        for (const k of zipFiles.keys()) {
+                            if (k.toLowerCase().endsWith('catalog.json')) { key = k; break; }
+                        }
+                        if (!key) {
+                            for (const k of zipFiles.keys()) {
+                                if (k.toLowerCase().endsWith('.json')) { key = k; break; }
+                            }
+                        }
+                        if (!key) throw new Error('catalog.json not found in archive');
+                        const data = JSON.parse(new TextDecoder().decode(zipFiles.get(key)));
+                        items = Array.isArray(data) ? data : (data.items || null);
+                    } else {
+                        const text = await file.text();
+                        const data = JSON.parse(text);
+                        items = Array.isArray(data) ? data : (data.items || null);
+                    }
+                    if (!Array.isArray(items)) throw new Error(t('importNotValid'));
+                    let count = 0;
+                    for (const raw of items) {
+                        if (!raw || typeof raw !== 'object') continue;
+                        /* unknown fields from other versions are preserved as-is */
+                        const item = Object.assign({}, raw);
+                        item.id = item.id || generateId();
+                        item.name = (typeof item.name === 'string') ? item.name : '';
+                        const priceNum = parseFloat(item.price);
+                        item.price = isFinite(priceNum) ? priceNum : null;
+                        const weightNum = parseFloat(String(item.weight == null ? '' : item.weight).replace(',', '.'));
+                        item.weight = (isFinite(weightNum) && weightNum > 0) ? String(weightNum) : '';
+                        if (!Array.isArray(item.photos)) item.photos = [];
+                        const photos = [];
+                        for (const photo of item.photos) {
+                            if (typeof photo !== 'string') continue;
+                            if (photo.indexOf('data:') === 0) { photos.push(photo); continue; }
+                            if (!zipFiles) continue;
+                            let bytes = zipFiles.get(photo);
+                            if (!bytes) {
+                                for (const k of zipFiles.keys()) {
+                                    if (k.endsWith(photo)) { bytes = zipFiles.get(k); break; }
+                                }
+                            }
+                            if (bytes) photos.push(bytesToDataUrl(bytes, photo));
+                        }
+                        item.photos = photos;
+                        const dim = (item.dimensions && typeof item.dimensions === 'object') ? item.dimensions : {};
+                        item.dimensions = {
+                            length: parseFloat(dim.length) || 0,
+                            width: parseFloat(dim.width) || 0,
+                            height: parseFloat(dim.height) || 0
+                        };
+                        if (typeof item.materials !== 'string') item.materials = '';
+                        if (typeof item.description !== 'string') item.description = '';
+                        if (!item.dateAdded) item.dateAdded = new Date().toISOString();
+                        await putItem(item);
+                        count++;
+                    }
+                    await refreshCatalog();
+                    alert(t('importSuccess') + count);
+                } catch (err) {
+                    alert(t('importError') + err.message);
+                } finally {
+                    importFile.value = '';
+                }
+            });
+
+            searchInput.addEventListener('input', applySearch);
+            addBtn.addEventListener('click', openAddForm);
+            modalClose.addEventListener('click', closeForm);
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) closeForm();
+            });
+            viewBtn.addEventListener('click', () => {
+                const idx = VIEW_ORDER.indexOf(currentView);
+                currentView = VIEW_ORDER[(idx + 1) % VIEW_ORDER.length];
+                localStorage.setItem('souvenirs_view', currentView);
+                updateViewButton();
+                applySearch();
+            });
+            document.getElementById('lang-switch').addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-lang]');
+                if (btn) setLanguage(btn.dataset.lang);
+            });
+
+            async function init() {
+                try {
+                    loadRate();
+                    try {
+                        await openDB();
+                    } catch (e) {
+                        console.warn('First DB open failed, retrying:', e);
+                        await new Promise(r => setTimeout(r, 300));
+                        await openDB();
+                    }
+                    setLanguage(currentLang);
+                    updateRateUI();
+                    updateViewButton();
+                    await refreshCatalog();
+                    await renderExportHistory();
+                } catch (err) {
+                    console.error('Init error:', err);
+                    alert(t('initError') + err.message);
+                }
+            }
+            document.addEventListener('DOMContentLoaded', init);
+            if (document.readyState === 'complete' || document.readyState === 'interactive') init();
+        })();
+    </script>
+</body>
+</html>
