@@ -851,12 +851,12 @@
             <button class="modal-close" id="settings-close">×</button>
             <h2 id="settings-title">Settings</h2>
             <div class="settings-info" id="rate-info-box">
-                <div><strong id="rate-display">1 GMD = 0.0165 USD</strong></div>
+                <div><strong id="rate-display">1 USD = 73.50 GMD</strong></div>
                 <div class="rate-source" id="rate-source-text">Source: default</div>
             </div>
             <div class="form-group">
-                <label for="f-custom-rate" id="label-custom-rate">Custom rate (1 GMD = ? USD)</label>
-                <input type="number" id="f-custom-rate" step="0.000001" min="0" placeholder="e.g. 0.0165">
+                <label for="f-custom-rate" id="label-custom-rate">Dalasi in 1 US dollar</label>
+                <input type="number" id="f-custom-rate" step="0.01" min="0" placeholder="e.g. 73.50">
             </div>
             <div class="form-actions" style="justify-content: flex-start; flex-wrap: wrap;">
                 <button type="button" class="btn btn-primary" id="save-rate-btn">💾 Save custom rate</button>
@@ -963,7 +963,7 @@
                     noName: 'Untitled',
                     photoAlt: 'Photo ',
                     photosCount: ' photos',
-                    labelCustomRate: 'Custom rate (1 GMD = ? USD)',
+                    labelCustomRate: 'Dalasi in 1 US dollar (D per $1)',
                     saveRate: '💾 Save custom rate',
                     updateRate: '🔄 Update from internet',
                     rateSourceDefault: 'Source: default',
@@ -973,7 +973,7 @@
                     rateSaved: 'Custom rate saved',
                     rateUpdateError: 'Could not fetch rate. Check internet connection.',
                     settingsNote: 'Catalog data is stored locally in your browser (IndexedDB) and survives page reloads and most updates. Always keep a ZIP backup for transferring to another device.',
-                    rateDisplay: '1 GMD = {rate} USD',
+                    rateDisplay: '1 USD = {rate} GMD',
                     viewLabel: 'View: ',
                     viewLarge: 'Large cards',
                     viewTwo: '2 per row',
@@ -988,7 +988,11 @@
                     nextPage: 'Next page',
                     searchPlaceholder2: 'Search the whole catalog...',
                     share: '\u2197 Share',
-                    shareFallback: 'Sharing is not available in this browser, the file was downloaded instead.',
+                    saveFile: '\u2b07 Save',
+                    shareFallback: 'This browser cannot hand the file to another app, so it was saved to your downloads instead.',
+                    shareError: 'Sharing failed ({err}). The archive was saved to your downloads instead.',
+                    shareHintOk: 'Share hands the archive straight to WhatsApp, Telegram, Mail or Files.',
+                    shareHintNo: 'Share is unavailable here, so only Save is shown. The browser offers it only over https:// (a page opened from disk as file:// does not count) and only where the Web Share API exists \u2014 Safari on iOS 15+, Chrome on Android, Safari on macOS. Save the archive and attach it from the file manager.',
                     kindExport: 'Export',
                     kindImport: 'Import',
                     historyTitle: 'Archives and imports',
@@ -1075,7 +1079,7 @@
                     noName: 'Без названия',
                     photoAlt: 'Фото ',
                     photosCount: ' фото',
-                    labelCustomRate: 'Свой курс (1 GMD = ? USD)',
+                    labelCustomRate: 'Даласи за 1 доллар США (D за $1)',
                     saveRate: '💾 Сохранить свой курс',
                     updateRate: '🔄 Обновить из интернета',
                     rateSourceDefault: 'Источник: по умолчанию',
@@ -1085,7 +1089,7 @@
                     rateSaved: 'Свой курс сохранён',
                     rateUpdateError: 'Не удалось получить курс. Проверьте интернет.',
                     settingsNote: 'Данные каталога хранятся локально в браузере (IndexedDB) и сохраняются при перезагрузке и большинстве обновлений. Всегда делайте ZIP-бэкап для переноса на другое устройство.',
-                    rateDisplay: '1 GMD = {rate} USD',
+                    rateDisplay: '1 USD = {rate} GMD',
                     viewLabel: 'Вид: ',
                     viewLarge: 'Крупные карточки',
                     viewTwo: '2 в ряд',
@@ -1100,7 +1104,11 @@
                     nextPage: 'Следующая страница',
                     searchPlaceholder2: 'Поиск по всему каталогу...',
                     share: '\u2197 Поделиться',
-                    shareFallback: 'Этот браузер не умеет делиться файлом, архив просто скачан.',
+                    saveFile: '\u2b07 Сохранить',
+                    shareFallback: 'Этот браузер не умеет передавать файл в другое приложение, архив просто сохранён в загрузки.',
+                    shareError: 'Передать файл не удалось ({err}). Архив сохранён в загрузки.',
+                    shareHintOk: '«Поделиться» отправляет архив прямо в WhatsApp, Telegram, почту или «Файлы».',
+                    shareHintNo: '«Поделиться» здесь недоступно, поэтому показана только «Сохранить». Браузер даёт эту функцию лишь на странице, открытой по https:// (файл с диска, file://, не считается) и только там, где есть Web Share API — Safari на iOS 15+, Chrome на Android, Safari на macOS. Сохраните архив и прикрепите его из файлового менеджера.',
                     kindExport: 'Экспорт',
                     kindImport: 'Импорт',
                     historyTitle: 'Архивы и импорты',
@@ -1131,7 +1139,8 @@
                 return translations[currentLang][key] || translations.en[key] || key;
             }
 
-            const DEFAULT_RATE = 0.0165;
+            /* exchangeRate = how many dalasi make 1 US dollar (e.g. 73.50) */
+            const DEFAULT_RATE = 73.50;
             let exchangeRate = DEFAULT_RATE;
             let rateSource = 'default';
             let rateUpdatedAt = null;
@@ -1142,7 +1151,8 @@
                     if (raw) {
                         const obj = JSON.parse(raw);
                         if (obj && typeof obj.rate === 'number' && obj.rate > 0) {
-                            exchangeRate = obj.rate;
+                            /* older versions stored USD per 1 GMD (0.0165) - convert once */
+                            exchangeRate = obj.rate < 1 ? (1 / obj.rate) : obj.rate;
                             rateSource = obj.source || 'manual';
                             rateUpdatedAt = obj.updated || null;
                         }
@@ -1167,7 +1177,7 @@
             function updateRateUI() {
                 const rateEl = document.getElementById('rate-display');
                 const sourceEl = document.getElementById('rate-source-text');
-                if (rateEl) rateEl.textContent = t('rateDisplay').replace('{rate}', exchangeRate.toFixed(6));
+                if (rateEl) rateEl.textContent = t('rateDisplay').replace('{rate}', exchangeRate.toFixed(2));
                 if (sourceEl) {
                     let srcText = t('rateSourceDefault');
                     if (rateSource === 'manual') srcText = t('rateSourceManual');
@@ -1180,24 +1190,26 @@
                     sourceEl.textContent = srcText;
                 }
                 const input = document.getElementById('f-custom-rate');
-                if (input) input.value = exchangeRate;
+                if (input) input.value = Math.round(exchangeRate * 100) / 100;
             }
 
             async function fetchRateFromApi() {
                 const urls = [
-                    'https://open.er-api.com/v6/latest/GMD',
-                    'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/gmd.min.json'
+                    'https://open.er-api.com/v6/latest/USD',
+                    'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.min.json',
+                    'https://open.er-api.com/v6/latest/GMD'
                 ];
                 for (const url of urls) {
                     try {
                         const res = await fetch(url, { cache: 'no-store' });
                         if (!res.ok) continue;
                         const data = await res.json();
-                        let rate = null;
-                        if (data.rates && data.rates.USD) rate = data.rates.USD;
-                        else if (data.gmd && data.gmd.usd) rate = data.gmd.usd;
-                        if (rate && rate > 0) {
-                            saveRate(rate, 'api');
+                        let dalasiPerUsd = null;
+                        if (data.rates && data.rates.GMD) dalasiPerUsd = data.rates.GMD;          /* base USD */
+                        else if (data.usd && data.usd.gmd) dalasiPerUsd = data.usd.gmd;           /* base USD */
+                        else if (data.rates && data.rates.USD) dalasiPerUsd = 1 / data.rates.USD; /* base GMD */
+                        if (dalasiPerUsd && dalasiPerUsd > 0 && isFinite(dalasiPerUsd)) {
+                            saveRate(Math.round(dalasiPerUsd * 100) / 100, 'api');
                             return true;
                         }
                     } catch (e) {
@@ -1207,9 +1219,10 @@
                 return false;
             }
 
+            /* dalasi -> dollars: divide by the number of dalasi in one dollar */
             function gmdToUsd(gmd) {
-                if (gmd == null || isNaN(gmd)) return null;
-                return parseFloat(gmd) * exchangeRate;
+                if (gmd == null || isNaN(gmd) || !exchangeRate) return null;
+                return parseFloat(gmd) / exchangeRate;
             }
 
             function formatUsd(val) {
@@ -2027,9 +2040,11 @@
                 if (e.target === settingsOverlay) closeSettings();
             });
             saveRateBtn.addEventListener('click', () => {
-                const val = parseFloat(fCustomRate.value);
+                let val = parseFloat(fCustomRate.value);
                 if (!val || val <= 0 || isNaN(val)) { alert(t('priceInvalid')); return; }
-                saveRate(val, 'manual');
+                /* someone typing 0.0136 clearly means the old direction - accept it anyway */
+                if (val < 1) val = 1 / val;
+                saveRate(Math.round(val * 100) / 100, 'manual');
                 alert(t('rateSaved'));
             });
             updateRateBtn.addEventListener('click', async () => {
@@ -2547,20 +2562,35 @@
                 for (let i = EXPORT_KEEP; i < exports_.length; i++) await deleteExport(exports_[i].id);
                 for (let i = IMPORT_KEEP; i < imports_.length; i++) await deleteExport(imports_[i].id);
             }
+            /* Web Share with files: needs a secure context (https or localhost) and
+               browser support. Checked once so the UI can be honest about it. */
+            function canShareFiles() {
+                try {
+                    if (!navigator.share || typeof File !== 'function') return false;
+                    if (!navigator.canShare) return !!window.isSecureContext;
+                    const probe = new File([new Blob(['x'], { type: 'application/zip' })], 'probe.zip', { type: 'application/zip' });
+                    return navigator.canShare({ files: [probe] });
+                } catch (e) { return false; }
+            }
+
             async function shareArchive(rec) {
                 if (!rec.blob) { alert(t('exportRestoreError')); return; }
-                try {
-                    if (navigator.share && typeof File === 'function') {
-                        const file = new File([rec.blob], rec.name, { type: 'application/zip' });
+                let file = null;
+                try { file = new File([rec.blob], rec.name, { type: 'application/zip' }); } catch (e) {}
+                if (file && navigator.share) {
+                    try {
                         const payload = { files: [file], title: rec.name };
                         if (!navigator.canShare || navigator.canShare(payload)) {
                             await navigator.share(payload);
                             return;
                         }
+                    } catch (err) {
+                        if (err && err.name === 'AbortError') return;   /* user closed the sheet */
+                        console.warn('share failed', err);
+                        downloadBlob(rec.blob, rec.name);
+                        alert(t('shareError').replace('{err}', (err && (err.name || err.message)) || '?'));
+                        return;
                     }
-                } catch (err) {
-                    if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) return;
-                    console.warn('share failed', err);
                 }
                 downloadBlob(rec.blob, rec.name);
                 alert(t('shareFallback'));
@@ -2582,8 +2612,10 @@
                 return rows;
             }
 
+            let shareSupported = false;
             async function renderExportHistory() {
                 if (!exportListEl || !db || !exportsAvailable) return;
+                shareSupported = canShareFiles();
                 let list = [];
                 try { list = await getExports(); } catch (e) { return; }
                 exportListEl.innerHTML = '';
@@ -2618,12 +2650,24 @@
                     row.appendChild(main);
 
                     if (!isImport) {
-                        const sh = document.createElement('button');
-                        sh.className = 'btn';
-                        sh.type = 'button';
-                        sh.textContent = t('share');
-                        sh.addEventListener('click', (e) => { e.stopPropagation(); shareArchive(rec); });
-                        row.appendChild(sh);
+                        if (shareSupported) {
+                            const sh = document.createElement('button');
+                            sh.className = 'btn';
+                            sh.type = 'button';
+                            sh.textContent = t('share');
+                            sh.addEventListener('click', (e) => { e.stopPropagation(); shareArchive(rec); });
+                            row.appendChild(sh);
+                        }
+                        const dl = document.createElement('button');
+                        dl.className = 'btn';
+                        dl.type = 'button';
+                        dl.textContent = t('saveFile');
+                        dl.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (!rec.blob) { alert(t('exportRestoreError')); return; }
+                            downloadBlob(rec.blob, rec.name);
+                        });
+                        row.appendChild(dl);
                     }
 
                     const details = document.createElement('div');
@@ -2648,6 +2692,11 @@
                     wrap.appendChild(details);
                     exportListEl.appendChild(wrap);
                 });
+                const hint = document.createElement('div');
+                hint.className = 'export-empty';
+                hint.style.marginTop = '10px';
+                hint.textContent = shareSupported ? t('shareHintOk') : t('shareHintNo');
+                exportListEl.appendChild(hint);
             }
 
             exportBtn.addEventListener('click', async () => {
@@ -2674,6 +2723,7 @@
                         exportedAt: new Date().toISOString(),
                         currency: 'GMD',
                         exchangeRate,
+                        rateBasis: 'GMD_per_USD',
                         rateSource,
                         items: payloadItems
                     };
