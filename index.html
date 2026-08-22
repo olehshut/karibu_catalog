@@ -47,9 +47,23 @@
             min-width: 180px;
             position: relative;
         }
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            margin-top: -8px;
+            width: 16px;
+            height: 16px;
+            pointer-events: none;
+            opacity: 0.6;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 16px 16px;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237f8c8d' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='7'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E");
+        }
         .search-wrapper input {
             width: 100%;
-            padding: 10px 16px;
+            padding: 10px 16px 10px 40px;
             border: 1px solid var(--border);
             border-radius: 30px;
             font-size: 1rem;
@@ -396,7 +410,35 @@
             max-height: 72%;
             object-fit: contain;
             border-radius: 8px;
-            transition: opacity 0.2s ease;
+            pointer-events: none;
+            transform-origin: center center;
+            will-change: transform;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .lightbox-save {
+            position: absolute;
+            top: 18px; left: 16px;
+            z-index: 2010;
+            background: rgba(0,0,0,0.35);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            padding: 9px 15px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+            transition: background 0.2s;
+        }
+        .lightbox-save:hover { background: rgba(255,255,255,0.22); }
+        .lightbox-zoomhint {
+            position: absolute;
+            top: 62px; left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.6);
+            font-size: 0.78rem;
+            z-index: 2010;
             pointer-events: none;
         }
         .lightbox-close {
@@ -566,6 +608,41 @@
             cursor: pointer;
         }
 
+        /* --- pagination --- */
+        .pager {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin: 14px 0;
+        }
+        .pager.on { display: flex; }
+        .pager button {
+            width: 40px; height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: var(--card-bg);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            font-size: 1.3rem;
+            line-height: 1;
+            color: var(--text);
+            cursor: pointer;
+            transition: background var(--transition);
+        }
+        .pager button:hover:not(:disabled) { background: #eaeef2; }
+        .pager button:disabled { opacity: 0.35; cursor: default; }
+        .pager .pager-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            min-width: 92px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .pager .pager-label small {
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
         /* --- autosave indicator --- */
         .save-state {
             font-size: 0.85rem;
@@ -594,6 +671,58 @@
         .export-row .ex-meta { color: var(--text-light); font-size: 0.8rem; }
         .export-row button { padding: 6px 12px; font-size: 0.85rem; }
         .export-empty { color: var(--text-light); font-size: 0.88rem; margin-top: 8px; }
+        .hist-item {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fafbfc;
+            overflow: hidden;
+        }
+        .hist-item .export-row {
+            border: none;
+            border-radius: 0;
+            background: transparent;
+            cursor: pointer;
+            margin: 0;
+        }
+        .hist-item .export-row:hover { background: #f2f5f8; }
+        .hist-kind {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-light);
+        }
+        .hist-details {
+            padding: 10px 12px 12px;
+            border-top: 1px dashed var(--border);
+            font-size: 0.85rem;
+        }
+        .hist-details.hidden { display: none; }
+        .hist-details table { width: 100%; border-collapse: collapse; }
+        .hist-details td { padding: 3px 0; vertical-align: top; }
+        .hist-details td.k { color: var(--text-light); padding-right: 10px; white-space: nowrap; }
+        .hist-details td.v { font-weight: 600; text-align: right; }
+        .check-result { margin-top: 12px; font-size: 0.88rem; }
+        .check-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            background: #fff;
+        }
+        .check-row .cr-main { flex: 1; min-width: 0; }
+        .check-row .cr-name { font-weight: 600; word-break: break-word; }
+        .check-row .cr-miss { color: var(--danger); font-size: 0.8rem; }
+        .check-row button { padding: 5px 10px; font-size: 0.82rem; }
+        .check-ok {
+            background: #eafaf1;
+            border: 1px solid #c7ecd8;
+            color: #1e8449;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
 
         @media (max-width: 600px) {
             .catalog.view-four { grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -617,15 +746,18 @@
             .lightbox-nav.next { right: 8px; }
             .lightbox-close { top: 10px; right: 10px; width: 42px; height: 42px; font-size: 2.2rem; }
             .lightbox-thumbs img { width: 52px; height: 52px; }
+            .lightbox-save { top: 14px; left: 10px; padding: 8px 12px; font-size: 0.82rem; }
             .lightbox img { max-height: 66%; }
         }
     </style>
 </head>
 <body>
+    <div id="fatal-error" style="display:none;background:#fdecea;border:1px solid #f5c6c2;color:#a03027;padding:12px 14px;border-radius:8px;margin-bottom:12px;font-size:0.9rem;word-break:break-word;"></div>
     <div class="container">
         <header>
             <h1 id="app-title">📦 Souvenirs</h1>
             <div class="search-wrapper">
+                <span class="search-icon" aria-hidden="true"></span>
                 <input type="text" id="search-input" placeholder="Search by name or description...">
             </div>
             <div class="toolbar">
@@ -642,7 +774,9 @@
             </div>
         </header>
         <main>
+            <div class="pager" id="pager-top"></div>
             <div id="catalog" class="catalog"></div>
+            <div class="pager" id="pager-bottom"></div>
             <div id="empty-state" style="text-align:center; padding: 40px; color: var(--text-light); display: none;">
                 <p style="font-size: 2rem; margin-bottom: 8px;">📭</p>
                 <p id="empty-text">No items yet. Add the first one!</p>
@@ -729,8 +863,11 @@
                 <button type="button" class="btn" id="update-rate-btn">🔄 Update from internet</button>
             </div>
             <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--border);">
-            <h3 id="exports-title" style="font-size: 1.05rem; margin-bottom: 4px;">Last exports</h3>
+            <h3 id="exports-title" style="font-size: 1.05rem; margin-bottom: 4px;">Archives and imports</h3>
             <div id="export-list" class="export-list"></div>
+            <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--border);">
+            <button type="button" class="btn" id="check-db-btn" style="width: 100%; justify-content: center;">✓ Check catalog</button>
+            <div id="check-result" class="check-result"></div>
             <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--border);">
             <p id="settings-note" style="font-size: 0.9rem; color: var(--text-light);">
                 Catalog data is stored locally in your browser (IndexedDB) and survives page reloads and most updates. Always keep a ZIP backup for transferring to another device.
@@ -742,6 +879,7 @@
     <div id="lightbox" class="lightbox hidden">
         <div class="lightbox-inner">
             <span class="lightbox-close" id="lightbox-close">×</span>
+            <button type="button" class="lightbox-save" id="lightbox-save">⬇</button>
             <button class="lightbox-nav prev" id="lightbox-prev" aria-label="Previous">‹</button>
             <img id="lightbox-img" src="" alt="Photo">
             <button class="lightbox-nav next" id="lightbox-next" aria-label="Next">›</button>
@@ -751,6 +889,13 @@
     </div>
 
     <script>
+        window.addEventListener('error', function (e) {
+            var box = document.getElementById('fatal-error');
+            if (!box) return;
+            box.style.display = 'block';
+            box.textContent = 'Script error: ' + (e.message || 'unknown') +
+                (e.filename ? ' @ line ' + e.lineno : '');
+        });
         (function() {
             'use strict';
 
@@ -838,7 +983,34 @@
                     exportsEmpty: 'No exports yet.',
                     exportDownload: '⬇ Download',
                     exportDone: 'Export complete\n\nFile: {name}\nSize: {size}\n\nThe last 2 archives are kept in the app (Settings). Older copies are removed from the app storage.',
-                    exportRestoreError: 'This archive copy is no longer available.'
+                    exportRestoreError: 'This archive copy is no longer available.',
+                    prevPage: 'Previous page',
+                    nextPage: 'Next page',
+                    searchPlaceholder2: 'Search the whole catalog...',
+                    share: '\u2197 Share',
+                    shareFallback: 'Sharing is not available in this browser, the file was downloaded instead.',
+                    kindExport: 'Export',
+                    kindImport: 'Import',
+                    historyTitle: 'Archives and imports',
+                    historyEmpty: 'No archives or imports yet.',
+                    importReplaceWarn: 'IMPORT REPLACES THE WHOLE CATALOG.\n\nIn the catalog now: {current} item(s).\nIn the file: {incoming} item(s).\n\nEverything stored now will be deleted and replaced by the contents of the file. This cannot be undone \u2014 export a backup first if you are not sure.\n\nReplace the catalog?',
+                    importCancelled: 'Import cancelled, the catalog is untouched.',
+                    sumTotal: 'Items in file',
+                    sumAdded: 'Added as new',
+                    sumUpdated: 'Replaced existing',
+                    sumNoPhoto: 'Without photos',
+                    sumFile: 'File',
+                    importDoneTitle: 'Import finished',
+                    checkDb: '\u2713 Check catalog',
+                    checkOk: 'All good: every item has a name, a price and at least one photo.',
+                    checkFound: 'Items needing attention: {n}',
+                    missName: 'no name',
+                    missPrice: 'no price',
+                    missPhoto: 'no photo',
+                    checkOpen: 'Open',
+                    photoSave: '\u2b07 Save photo',
+                    photoSaveError: 'Could not save the photo.',
+                    dateLabel: 'Date'
                 },
                 ru: {
                     title: '📦 Сувениры',
@@ -923,7 +1095,34 @@
                     exportsEmpty: 'Экспортов пока нет.',
                     exportDownload: '⬇ Скачать',
                     exportDone: 'Экспорт выполнен\n\nФайл: {name}\nРазмер: {size}\n\nПоследние 2 архива хранятся в приложении (Настройки). Более старые копии удаляются из хранилища.',
-                    exportRestoreError: 'Эта копия архива больше недоступна.'
+                    exportRestoreError: 'Эта копия архива больше недоступна.',
+                    prevPage: 'Предыдущая страница',
+                    nextPage: 'Следующая страница',
+                    searchPlaceholder2: 'Поиск по всему каталогу...',
+                    share: '\u2197 Поделиться',
+                    shareFallback: 'Этот браузер не умеет делиться файлом, архив просто скачан.',
+                    kindExport: 'Экспорт',
+                    kindImport: 'Импорт',
+                    historyTitle: 'Архивы и импорты',
+                    historyEmpty: 'Архивов и импортов пока нет.',
+                    importReplaceWarn: 'ИМПОРТ ЗАМЕНИТ ВЕСЬ КАТАЛОГ.\n\nСейчас в каталоге: {current} тов.\nВ файле: {incoming} тов.\n\nВсё, что сейчас хранится, будет удалено и заменено содержимым файла. Отменить это нельзя \u2014 если не уверены, сначала сделайте экспорт.\n\nЗаменить каталог?',
+                    importCancelled: 'Импорт отменён, каталог не изменён.',
+                    sumTotal: 'Товаров в файле',
+                    sumAdded: 'Добавлено новых',
+                    sumUpdated: 'Заменено существующих',
+                    sumNoPhoto: 'Без фотографий',
+                    sumFile: 'Файл',
+                    importDoneTitle: 'Импорт завершён',
+                    checkDb: '\u2713 Проверить базу',
+                    checkOk: 'Всё заполнено: у каждого товара есть название, цена и хотя бы одно фото.',
+                    checkFound: 'Товаров с пропусками: {n}',
+                    missName: 'нет названия',
+                    missPrice: 'нет цены',
+                    missPhoto: 'нет фото',
+                    checkOpen: 'Открыть',
+                    photoSave: '\u2b07 Сохранить фото',
+                    photoSaveError: 'Не удалось сохранить фото.',
+                    dateLabel: 'Дата'
                 }
             };
 
@@ -1055,7 +1254,11 @@
                 document.getElementById('f-weight').placeholder = t('weightPlaceholder');
                 document.getElementById('label-materials').textContent = t('labelMaterials');
                 document.getElementById('f-materials').placeholder = t('materialsPlaceholder');
-                document.getElementById('exports-title').textContent = t('exportsTitle');
+                document.getElementById('exports-title').textContent = t('historyTitle');
+                document.getElementById('lightbox-save').textContent = t('photoSave');
+                document.getElementById('check-db-btn').textContent = t('checkDb');
+                document.getElementById('search-input').placeholder = t('searchPlaceholder2');
+                checkResultEl.innerHTML = '';
                 document.getElementById('label-dimensions').textContent = t('labelDimensions');
                 document.getElementById('f-length').placeholder = t('lengthPlaceholder');
                 document.getElementById('f-width').placeholder = t('widthPlaceholder');
@@ -1160,6 +1363,16 @@
                 });
             }
 
+            async function clearAllItems() {
+                await ensureDB();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction([STORE_NAME], 'readwrite');
+                    const rq = tx.objectStore(STORE_NAME).clear();
+                    rq.onerror = () => reject(rq.error);
+                    rq.onsuccess = () => resolve();
+                });
+            }
+
             async function deleteItemFromDB(id) {
                 await ensureDB();
                 return new Promise((resolve, reject) => {
@@ -1250,6 +1463,7 @@
             const lightboxPrev = document.getElementById('lightbox-prev');
             const lightboxNext = document.getElementById('lightbox-next');
             const lightboxCounter = document.getElementById('lightbox-counter');
+            const lightboxSave = document.getElementById('lightbox-save');
             const lightboxThumbs = document.getElementById('lightbox-thumbs');
             const lightboxThumbsInner = document.getElementById('lightbox-thumbs-inner');
             const settingsOverlay = document.getElementById('settings-overlay');
@@ -1260,12 +1474,48 @@
             const viewBtn = document.getElementById('view-btn');
             const saveState = document.getElementById('save-state');
             const exportListEl = document.getElementById('export-list');
+            const checkDbBtn = document.getElementById('check-db-btn');
+            const checkResultEl = document.getElementById('check-result');
+            const pagerTop = document.getElementById('pager-top');
+            const pagerBottom = document.getElementById('pager-bottom');
 
             const VIEW_ORDER = ['large', 'two', 'four', 'list'];
             const VIEW_ICON = { large: '▦', two: '◫', four: '▩', list: '☰' };
             const VIEW_LABEL = { large: 'viewLarge', two: 'viewTwo', four: 'viewFour', list: 'viewList' };
             let currentView = localStorage.getItem('souvenirs_view') || 'large';
             if (VIEW_ORDER.indexOf(currentView) === -1) currentView = 'large';
+            const PAGE_SIZE = { large: 10, two: 20, four: 48, list: 75 };
+            let currentPage = 1;
+
+            function buildPager(el, pages) {
+                el.innerHTML = '';
+                if (pages <= 1) { el.classList.remove('on'); return; }
+                el.classList.add('on');
+                const prev = document.createElement('button');
+                prev.type = 'button';
+                prev.innerHTML = '\u2039';
+                prev.title = t('prevPage');
+                prev.disabled = currentPage <= 1;
+                prev.addEventListener('click', () => goToPage(currentPage - 1));
+                const label = document.createElement('div');
+                label.className = 'pager-label';
+                label.innerHTML = currentPage + ' <small>(' + pages + ')</small>';
+                const next = document.createElement('button');
+                next.type = 'button';
+                next.innerHTML = '\u203A';
+                next.title = t('nextPage');
+                next.disabled = currentPage >= pages;
+                next.addEventListener('click', () => goToPage(currentPage + 1));
+                el.appendChild(prev);
+                el.appendChild(label);
+                el.appendChild(next);
+            }
+            function goToPage(n) {
+                currentPage = n;
+                applySearch();
+                const top = document.querySelector('main');
+                if (top && top.scrollIntoView) top.scrollIntoView({ block: 'start' });
+            }
 
             function updateViewButton() {
                 if (!viewBtn) return;
@@ -1279,14 +1529,23 @@
                 if (!items || items.length === 0) {
                     emptyStateEl.style.display = 'block';
                     catalogEl.style.display = 'none';
+                    pagerTop.classList.remove('on');
+                    pagerBottom.classList.remove('on');
                     return;
                 }
                 emptyStateEl.style.display = 'none';
                 catalogEl.style.display = (currentView === 'list') ? 'flex' : 'grid';
                 items.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
-                items.forEach(item => catalogEl.appendChild(
+                const size = PAGE_SIZE[currentView] || 10;
+                const pages = Math.max(1, Math.ceil(items.length / size));
+                if (currentPage > pages) currentPage = pages;
+                if (currentPage < 1) currentPage = 1;
+                const start = (currentPage - 1) * size;
+                items.slice(start, start + size).forEach(item => catalogEl.appendChild(
                     currentView === 'list' ? createListRow(item) : createCard(item)
                 ));
+                buildPager(pagerTop, pages);
+                buildPager(pagerBottom, pages);
             }
 
             function itemMetaText(item) {
@@ -1493,18 +1752,27 @@
                 });
             }
 
+            /* every field is searchable except the dimensions */
+            function searchHaystack(item) {
+                const parts = [
+                    item.name, item.description, item.materials, item.weight,
+                    (item.price == null ? '' : item.price), formatDate(item.dateAdded)
+                ];
+                for (const key in item) {
+                    if (!Object.prototype.hasOwnProperty.call(item, key)) continue;
+                    if (key === 'dimensions' || key === 'photos' || key === 'id') continue;
+                    const v = item[key];
+                    if (typeof v === 'string' || typeof v === 'number') parts.push(v);
+                }
+                return parts.join(' \u00B7 ').toLowerCase();
+            }
             function applySearch() {
                 const query = searchInput.value.trim().toLowerCase();
                 if (!query) {
-                    renderCatalog(allItems);
+                    renderCatalog(allItems.slice());
                     return;
                 }
-                const filtered = allItems.filter(item => {
-                    const name = (item.name || '').toLowerCase();
-                    const desc = (item.description || '').toLowerCase();
-                    return name.includes(query) || desc.includes(query);
-                });
-                renderCatalog(filtered);
+                renderCatalog(allItems.filter(item => searchHaystack(item).indexOf(query) !== -1));
             }
 
             function updateFormUsdPreview() {
@@ -1619,9 +1887,10 @@
                 updateFormUsdPreview();
                 fWeight.value = item.weight ? (parseFloat(item.weight) || '') : '';
                 updateFormKgPreview();
-                fLength.value = item.dimensions?.length || '';
-                fWidth.value = item.dimensions?.width || '';
-                fHeight.value = item.dimensions?.height || '';
+                const dimsOf = item.dimensions || {};
+                fLength.value = dimsOf.length || '';
+                fWidth.value = dimsOf.width || '';
+                fHeight.value = dimsOf.height || '';
                 fMaterials.value = item.materials || '';
                 fDescription.value = item.description || '';
                 if (saveState) { saveState.textContent = ''; saveState.classList.remove('on'); }
@@ -1693,14 +1962,66 @@
                 await closeForm();
             });
 
+            function runCatalogCheck() {
+                checkResultEl.innerHTML = '';
+                const bad = [];
+                allItems.forEach(item => {
+                    const miss = [];
+                    if (!item.name || !item.name.trim()) miss.push(t('missName'));
+                    if (item.price == null || isNaN(parseFloat(item.price))) miss.push(t('missPrice'));
+                    if (!item.photos || !item.photos.length) miss.push(t('missPhoto'));
+                    if (miss.length) bad.push({ item: item, miss: miss });
+                });
+                if (!bad.length) {
+                    const ok = document.createElement('div');
+                    ok.className = 'check-ok';
+                    ok.textContent = t('checkOk');
+                    checkResultEl.appendChild(ok);
+                    return;
+                }
+                const head = document.createElement('div');
+                head.style.margin = '4px 0 8px';
+                head.style.fontWeight = '600';
+                head.textContent = t('checkFound').replace('{n}', bad.length);
+                checkResultEl.appendChild(head);
+                bad.forEach(entry => {
+                    const row = document.createElement('div');
+                    row.className = 'check-row';
+                    const main = document.createElement('div');
+                    main.className = 'cr-main';
+                    const nm = document.createElement('div');
+                    nm.className = 'cr-name';
+                    nm.textContent = entry.item.name && entry.item.name.trim() ? entry.item.name : t('noName');
+                    const ms = document.createElement('div');
+                    ms.className = 'cr-miss';
+                    ms.textContent = entry.miss.join(', ');
+                    main.appendChild(nm);
+                    main.appendChild(ms);
+                    const open = document.createElement('button');
+                    open.className = 'btn';
+                    open.type = 'button';
+                    open.textContent = t('checkOpen');
+                    open.addEventListener('click', () => {
+                        closeSettings();
+                        openEditForm(entry.item);
+                    });
+                    row.appendChild(main);
+                    row.appendChild(open);
+                    checkResultEl.appendChild(row);
+                });
+            }
+
             function openSettings() {
                 updateRateUI();
+                checkResultEl.innerHTML = '';
+                renderExportHistory();
                 settingsOverlay.classList.remove('hidden');
             }
             function closeSettings() {
                 settingsOverlay.classList.add('hidden');
             }
             settingsBtn.addEventListener('click', openSettings);
+            checkDbBtn.addEventListener('click', runCatalogCheck);
             settingsClose.addEventListener('click', closeSettings);
             settingsOverlay.addEventListener('click', (e) => {
                 if (e.target === settingsOverlay) closeSettings();
@@ -1720,15 +2041,110 @@
                 alert(ok ? t('rateUpdated') : t('rateUpdateError'));
             });
 
+            /* --- pinch to zoom / pan --- */
+            let zoomScale = 1, zoomX = 0, zoomY = 0;
+            let pinchStartDist = 0, pinchStartScale = 1;
+            let panning = false, panStartX = 0, panStartY = 0, panOriginX = 0, panOriginY = 0;
+            let gestureWasPinch = false, lastTapAt = 0;
+
+            function applyZoom(animate) {
+                lightboxImg.style.transition = animate ? 'transform 0.18s ease' : 'none';
+                lightboxImg.style.transform = 'translate(' + zoomX + 'px,' + zoomY + 'px) scale(' + zoomScale + ')';
+            }
+            function resetZoom(animate) {
+                zoomScale = 1; zoomX = 0; zoomY = 0;
+                applyZoom(!!animate);
+            }
+            function clampZoom(v) { return Math.min(5, Math.max(1, v)); }
+            function touchDist(e) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+            lightbox.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    gestureWasPinch = true;
+                    pinchStartDist = touchDist(e);
+                    pinchStartScale = zoomScale;
+                    e.preventDefault();
+                } else if (e.touches.length === 1 && zoomScale > 1) {
+                    panning = true;
+                    panStartX = e.touches[0].clientX;
+                    panStartY = e.touches[0].clientY;
+                    panOriginX = zoomX;
+                    panOriginY = zoomY;
+                }
+            }, { passive: false });
+            lightbox.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2 && pinchStartDist > 0) {
+                    zoomScale = clampZoom(pinchStartScale * touchDist(e) / pinchStartDist);
+                    if (zoomScale === 1) { zoomX = 0; zoomY = 0; }
+                    applyZoom(false);
+                    e.preventDefault();
+                } else if (panning && e.touches.length === 1) {
+                    zoomX = panOriginX + (e.touches[0].clientX - panStartX);
+                    zoomY = panOriginY + (e.touches[0].clientY - panStartY);
+                    applyZoom(false);
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            lightbox.addEventListener('touchend', (e) => {
+                if (e.touches.length === 0) {
+                    panning = false;
+                    pinchStartDist = 0;
+                    if (zoomScale <= 1.02) resetZoom(true);
+                    setTimeout(() => { gestureWasPinch = false; }, 60);
+                }
+            });
+            /* double tap zooms in and out */
+            lightbox.addEventListener('touchend', (e) => {
+                if (gestureWasPinch || e.touches.length) return;
+                if (e.target.closest && (e.target.closest('.lightbox-thumbs') ||
+                    e.target.closest('.lightbox-nav') || e.target.closest('.lightbox-save') ||
+                    e.target.closest('.lightbox-close'))) return;
+                const now = Date.now();
+                if (now - lastTapAt < 320) {
+                    if (zoomScale > 1) resetZoom(true);
+                    else { zoomScale = 2.5; applyZoom(true); }
+                    lastTapAt = 0;
+                } else {
+                    lastTapAt = now;
+                }
+            });
+            /* mouse wheel zoom on desktop */
+            lightbox.addEventListener('wheel', (e) => {
+                if (lightbox.classList.contains('hidden')) return;
+                if (e.target.closest && e.target.closest('.lightbox-thumbs')) return;
+                e.preventDefault();
+                zoomScale = clampZoom(zoomScale * (e.deltaY < 0 ? 1.12 : 0.89));
+                if (zoomScale === 1) { zoomX = 0; zoomY = 0; }
+                applyZoom(false);
+            }, { passive: false });
+
+            lightboxSave.addEventListener('click', (e) => {
+                e.stopPropagation();
+                try {
+                    const src = lbPhotos[lbIndex];
+                    const bin = dataUrlToBytes(src);
+                    if (!bin) throw new Error('bad photo data');
+                    const blob = new Blob([bin.bytes], { type: bin.mime });
+                    downloadBlob(blob, 'photo_' + (lbIndex + 1) + '_' + new Date().toISOString().slice(0, 10) + '.' + bin.ext);
+                } catch (err) {
+                    alert(t('photoSaveError') + ' ' + err.message);
+                }
+            });
+
             function openLightbox(photos, startIndex = 0) {
                 if (!photos || photos.length === 0) return;
                 lbPhotos = photos;
                 lbIndex = Math.max(0, Math.min(startIndex, photos.length - 1));
+                resetZoom(false);
                 updateLightbox();
                 lightbox.classList.remove('hidden');
                 document.body.style.overflow = 'hidden';
             }
             function closeLightbox() {
+                resetZoom(false);
                 lightbox.classList.add('hidden');
                 lightboxImg.src = '';
                 lbPhotos = [];
@@ -1737,6 +2153,7 @@
             }
             function updateLightbox() {
                 if (lbPhotos.length === 0) return;
+                resetZoom(false);
                 lightboxImg.src = lbPhotos[lbIndex];
                 lightboxCounter.textContent = (lbIndex + 1) + ' / ' + lbPhotos.length;
                 const multi = lbPhotos.length > 1;
@@ -1784,7 +2201,23 @@
             lightboxClose.addEventListener('click', (e) => { e.stopPropagation(); closeLightbox(); });
             lightbox.addEventListener('click', (e) => {
                 if (e.target.closest && e.target.closest('.lightbox-thumbs')) return;
+                if (zoomScale > 1) return;
                 if (e.target === lightbox || e.target.classList.contains('lightbox-inner')) closeLightbox();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (!lightbox.classList.contains('hidden')) return;
+                if (!modalOverlay.classList.contains('hidden')) return;
+                if (!settingsOverlay.classList.contains('hidden')) return;
+                const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+                if (tag === 'input' || tag === 'textarea') return;
+                if (e.key === 'ArrowLeft' && currentPage > 1) goToPage(currentPage - 1);
+                if (e.key === 'ArrowRight') {
+                    const size = PAGE_SIZE[currentView] || 10;
+                    const total = searchInput.value.trim()
+                        ? allItems.filter(it => searchHaystack(it).indexOf(searchInput.value.trim().toLowerCase()) !== -1).length
+                        : allItems.length;
+                    if (currentPage < Math.ceil(total / size)) goToPage(currentPage + 1);
+                }
             });
             document.addEventListener('keydown', (e) => {
                 if (lightbox.classList.contains('hidden')) return;
@@ -1795,6 +2228,8 @@
             let touchStartX = 0;
             lightbox.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
             lightbox.addEventListener('touchend', (e) => {
+                if (zoomScale > 1 || gestureWasPinch || e.touches.length) return;
+                if (e.target.closest && e.target.closest('.lightbox-thumbs')) return;
                 const diff = touchStartX - e.changedTouches[0].screenX;
                 if (Math.abs(diff) > 50) { if (diff > 0) lightboxNextFn(); else lightboxPrevFn(); }
             }, { passive: true });
@@ -1817,6 +2252,7 @@
             }
             async function deflateRaw(u8) {
                 if (typeof CompressionStream === 'undefined') return null;
+                if (typeof Blob === 'undefined' || !Blob.prototype.stream) return null;
                 try {
                     const cs = new CompressionStream('deflate-raw');
                     const stream = new Blob([u8]).stream().pipeThrough(cs);
@@ -1938,7 +2374,7 @@
             }
 
             async function inflateRaw(u8) {
-                if (typeof DecompressionStream !== 'undefined') {
+                if (typeof DecompressionStream !== 'undefined' && Blob.prototype.stream) {
                     try {
                         const ds = new DecompressionStream('deflate-raw');
                         const stream = new Blob([u8]).stream().pipeThrough(ds);
@@ -2013,6 +2449,24 @@
                 }
                 return out;
             }
+            function readFileAsArrayBuffer(file) {
+                if (file.arrayBuffer) return file.arrayBuffer();
+                return new Promise((resolve, reject) => {
+                    const r = new FileReader();
+                    r.onload = () => resolve(r.result);
+                    r.onerror = () => reject(r.error || new Error('read error'));
+                    r.readAsArrayBuffer(file);
+                });
+            }
+            function readFileAsText(file) {
+                if (file.text) return file.text();
+                return new Promise((resolve, reject) => {
+                    const r = new FileReader();
+                    r.onload = () => resolve(r.result);
+                    r.onerror = () => reject(r.error || new Error('read error'));
+                    r.readAsText(file);
+                });
+            }
             function dataUrlToBytes(dataUrl) {
                 const m = /^data:([^;,]*)(;base64)?,([\s\S]*)$/.exec(dataUrl || '');
                 if (!m) return null;
@@ -2075,11 +2529,59 @@
                     rq.onsuccess = () => resolve();
                 });
             }
-            async function rememberExport(name, blob) {
-                await putExport({ id: generateId(), name, size: blob.size, date: new Date().toISOString(), blob });
-                const list = await getExports();
-                for (let i = EXPORT_KEEP; i < list.length; i++) await deleteExport(list[i].id);
+            const IMPORT_KEEP = 5;
+            async function rememberExport(name, blob, itemCount) {
+                await putExport({ id: generateId(), kind: 'export', name: name, size: blob.size,
+                    date: new Date().toISOString(), blob: blob, summary: { total: itemCount } });
+                await trimHistory();
             }
+            async function rememberImport(name, size, summary) {
+                await putExport({ id: generateId(), kind: 'import', name: name, size: size,
+                    date: new Date().toISOString(), summary: summary });
+                await trimHistory();
+            }
+            async function trimHistory() {
+                const list = await getExports();
+                const exports_ = list.filter(r => r.kind !== 'import');
+                const imports_ = list.filter(r => r.kind === 'import');
+                for (let i = EXPORT_KEEP; i < exports_.length; i++) await deleteExport(exports_[i].id);
+                for (let i = IMPORT_KEEP; i < imports_.length; i++) await deleteExport(imports_[i].id);
+            }
+            async function shareArchive(rec) {
+                if (!rec.blob) { alert(t('exportRestoreError')); return; }
+                try {
+                    if (navigator.share && typeof File === 'function') {
+                        const file = new File([rec.blob], rec.name, { type: 'application/zip' });
+                        const payload = { files: [file], title: rec.name };
+                        if (!navigator.canShare || navigator.canShare(payload)) {
+                            await navigator.share(payload);
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) return;
+                    console.warn('share failed', err);
+                }
+                downloadBlob(rec.blob, rec.name);
+                alert(t('shareFallback'));
+            }
+            function summaryRows(rec) {
+                const rows = [];
+                const sum = rec.summary || {};
+                if (rec.kind === 'import') {
+                    rows.push([t('sumFile'), rec.name]);
+                    if (sum.total != null) rows.push([t('sumTotal'), sum.total]);
+                    if (sum.added != null) rows.push([t('sumAdded'), sum.added]);
+                    if (sum.updated != null) rows.push([t('sumUpdated'), sum.updated]);
+                    if (sum.noPhoto != null) rows.push([t('sumNoPhoto'), sum.noPhoto]);
+                } else {
+                    rows.push([t('sumFile'), rec.name]);
+                    if (sum.total != null) rows.push([t('sumTotal'), sum.total]);
+                }
+                rows.push([t('dateLabel'), formatDate(rec.date)]);
+                return rows;
+            }
+
             async function renderExportHistory() {
                 if (!exportListEl || !db || !exportsAvailable) return;
                 let list = [];
@@ -2088,34 +2590,63 @@
                 if (!list.length) {
                     const p = document.createElement('div');
                     p.className = 'export-empty';
-                    p.textContent = t('exportsEmpty');
+                    p.textContent = t('historyEmpty');
                     exportListEl.appendChild(p);
                     return;
                 }
-                list.slice(0, EXPORT_KEEP).forEach(rec => {
+                list.forEach(rec => {
+                    const isImport = rec.kind === 'import';
+                    const wrap = document.createElement('div');
+                    wrap.className = 'hist-item';
+
                     const row = document.createElement('div');
                     row.className = 'export-row';
                     const main = document.createElement('div');
                     main.className = 'ex-main';
+                    const kind = document.createElement('div');
+                    kind.className = 'hist-kind';
+                    kind.textContent = (isImport ? '\u2b07 ' : '\u2b06 ') + t(isImport ? 'kindImport' : 'kindExport');
                     const nm = document.createElement('div');
                     nm.className = 'ex-name';
                     nm.textContent = rec.name;
                     const mt = document.createElement('div');
                     mt.className = 'ex-meta';
-                    mt.textContent = formatSize(rec.size) + ' \u00B7 ' + formatDate(rec.date);
+                    mt.textContent = (rec.size ? formatSize(rec.size) + ' \u00B7 ' : '') + formatDate(rec.date);
+                    main.appendChild(kind);
                     main.appendChild(nm);
                     main.appendChild(mt);
-                    const dl = document.createElement('button');
-                    dl.className = 'btn';
-                    dl.type = 'button';
-                    dl.textContent = t('exportDownload');
-                    dl.addEventListener('click', () => {
-                        if (!rec.blob) { alert(t('exportRestoreError')); return; }
-                        downloadBlob(rec.blob, rec.name);
-                    });
                     row.appendChild(main);
-                    row.appendChild(dl);
-                    exportListEl.appendChild(row);
+
+                    if (!isImport) {
+                        const sh = document.createElement('button');
+                        sh.className = 'btn';
+                        sh.type = 'button';
+                        sh.textContent = t('share');
+                        sh.addEventListener('click', (e) => { e.stopPropagation(); shareArchive(rec); });
+                        row.appendChild(sh);
+                    }
+
+                    const details = document.createElement('div');
+                    details.className = 'hist-details hidden';
+                    const table = document.createElement('table');
+                    summaryRows(rec).forEach(pair => {
+                        const tr = document.createElement('tr');
+                        const k = document.createElement('td');
+                        k.className = 'k';
+                        k.textContent = pair[0];
+                        const v = document.createElement('td');
+                        v.className = 'v';
+                        v.textContent = pair[1];
+                        tr.appendChild(k);
+                        tr.appendChild(v);
+                        table.appendChild(tr);
+                    });
+                    details.appendChild(table);
+
+                    row.addEventListener('click', () => details.classList.toggle('hidden'));
+                    wrap.appendChild(row);
+                    wrap.appendChild(details);
+                    exportListEl.appendChild(wrap);
                 });
             }
 
@@ -2157,7 +2688,7 @@
                     const fileName = 'souvenirs_catalog_' + dateStr + '_' + stamp + '.zip';
                     const blob = await zipBuild(files);
                     downloadBlob(blob, fileName);
-                    try { await rememberExport(fileName, blob); await renderExportHistory(); } catch (e) { console.warn('export history', e); }
+                    try { await rememberExport(fileName, blob, items.length); await renderExportHistory(); } catch (e) { console.warn('export history', e); }
                     alert(t('exportDone').replace('{name}', fileName).replace('{size}', formatSize(blob.size)));
                 } catch (err) {
                     alert(t('exportError') + err.message);
@@ -2186,7 +2717,7 @@
                     let zipFiles = null;
                     const name = (file.name || '').toLowerCase();
                     if (name.endsWith('.zip') || file.type.includes('zip')) {
-                        zipFiles = await zipRead(await file.arrayBuffer());
+                        zipFiles = await zipRead(await readFileAsArrayBuffer(file));
                         let key = null;
                         for (const k of zipFiles.keys()) {
                             if (k.toLowerCase().endsWith('catalog.json')) { key = k; break; }
@@ -2200,12 +2731,24 @@
                         const data = JSON.parse(new TextDecoder().decode(zipFiles.get(key)));
                         items = Array.isArray(data) ? data : (data.items || null);
                     } else {
-                        const text = await file.text();
+                        const text = await readFileAsText(file);
                         const data = JSON.parse(text);
                         items = Array.isArray(data) ? data : (data.items || null);
                     }
                     if (!Array.isArray(items)) throw new Error(t('importNotValid'));
-                    let count = 0;
+
+                    /* import replaces the whole catalog - ask first */
+                    const existing = await getAllItems();
+                    const existingIds = {};
+                    existing.forEach(it => { existingIds[it.id] = true; });
+                    const warn = t('importReplaceWarn')
+                        .replace('{current}', existing.length)
+                        .replace('{incoming}', items.length);
+                    if (!confirm(warn)) { alert(t('importCancelled')); return; }
+                    await clearAllItems();
+                    allItems = [];
+
+                    let count = 0, added = 0, updated = 0, noPhoto = 0;
                     for (const raw of items) {
                         if (!raw || typeof raw !== 'object') continue;
                         /* unknown fields from other versions are preserved as-is */
@@ -2240,11 +2783,20 @@
                         if (typeof item.materials !== 'string') item.materials = '';
                         if (typeof item.description !== 'string') item.description = '';
                         if (!item.dateAdded) item.dateAdded = new Date().toISOString();
+                        if (existingIds[item.id]) updated++; else added++;
+                        if (!item.photos.length) noPhoto++;
                         await putItem(item);
                         count++;
                     }
                     await refreshCatalog();
-                    alert(t('importSuccess') + count);
+                    const summary = { total: count, added: added, updated: updated, noPhoto: noPhoto };
+                    try { await rememberImport(file.name, file.size, summary); await renderExportHistory(); }
+                    catch (e) { console.warn('import history', e); }
+                    alert(t('importDoneTitle') + '\n\n' +
+                        t('sumTotal') + ': ' + count + '\n' +
+                        t('sumAdded') + ': ' + added + '\n' +
+                        t('sumUpdated') + ': ' + updated + '\n' +
+                        t('sumNoPhoto') + ': ' + noPhoto);
                 } catch (err) {
                     alert(t('importError') + err.message);
                 } finally {
@@ -2252,7 +2804,7 @@
                 }
             });
 
-            searchInput.addEventListener('input', applySearch);
+            searchInput.addEventListener('input', () => { currentPage = 1; applySearch(); });
             addBtn.addEventListener('click', openAddForm);
             modalClose.addEventListener('click', closeForm);
             modalOverlay.addEventListener('click', (e) => {
@@ -2261,6 +2813,7 @@
             viewBtn.addEventListener('click', () => {
                 const idx = VIEW_ORDER.indexOf(currentView);
                 currentView = VIEW_ORDER[(idx + 1) % VIEW_ORDER.length];
+                currentPage = 1;
                 localStorage.setItem('souvenirs_view', currentView);
                 updateViewButton();
                 applySearch();
