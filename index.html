@@ -380,6 +380,10 @@
             color: var(--text);
         }
         .settings-info strong { color: var(--accent-dark); }
+        .rate-flash {
+            color: var(--danger);
+            font-weight: 600;
+        }
         .rate-source {
             font-size: 0.8rem;
             color: var(--text-light);
@@ -629,6 +633,89 @@
         .exp-choice .exp-txt { flex: 1; min-width: 0; }
         .exp-choice b { display: block; font-size: 1rem; margin-bottom: 3px; }
         .exp-choice small { color: var(--text-light); font-size: 0.85rem; line-height: 1.35; display: block; }
+        .toast {
+            position: fixed;
+            left: 50%;
+            top: 14px;
+            transform: translate(-50%, -140%);
+            z-index: 4000;
+            max-width: min(92vw, 520px);
+            padding: 13px 18px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            line-height: 1.4;
+            white-space: pre-line;
+            text-align: left;
+            box-shadow: 0 8px 26px rgba(0,0,0,0.28);
+            transition: transform 0.25s ease, opacity 0.25s ease;
+            opacity: 0;
+            cursor: pointer;
+            color: #fff;
+            background: #2c3e50;
+        }
+        .toast.on { transform: translate(-50%, 0); opacity: 1; }
+        .toast.ok  { background: #128a4a; color: #fff; }
+        .toast.err { background: #c0392b; color: #fff; }
+        .toast.info{ background: #1f6fb2; color: #fff; }
+        .hidden { display: none !important; }
+        .exp-sep {
+            height: 1px;
+            background: var(--border);
+            margin: 16px 0 12px;
+        }
+        .link-input-wrap { position: relative; width: 100%; }
+        .link-input-wrap input { width: 100%; padding-right: 38px; }
+        .link-ok {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #1e8449;
+            font-size: 1.1rem;
+            font-weight: 700;
+            pointer-events: none;
+        }
+        .link-ok.hidden { display: none; }
+        .link-box {
+            margin-top: 14px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #f7f9fb;
+            font-size: 0.85rem;
+        }
+        .link-box .lb-title {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .link-row { display: flex; align-items: center; gap: 8px; }
+        .link-text {
+            flex: 1;
+            min-width: 0;
+            font-family: monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            color: var(--accent-dark);
+            -webkit-user-select: all;
+            user-select: all;
+            cursor: text;
+        }
+        .link-row button {
+            flex: none;
+            width: 38px; height: 38px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .link-row button:hover { background: #eef3f7; }
+        .link-meta { color: var(--text-light); font-size: 0.78rem; margin-top: 6px; }
         .sync-line {
             margin-top: 14px;
             padding-top: 12px;
@@ -671,8 +758,48 @@
             color: var(--text-light);
             font-weight: 500;
         }
+        .pager-select {
+            height: 40px;
+            min-width: 92px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: var(--card-bg);
+            padding: 0 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-align: center;
+            text-align-last: center;
+            cursor: pointer;
+        }
+        .to-top {
+            position: fixed;
+            right: 16px;
+            bottom: calc(16px + env(safe-area-inset-bottom));
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            border: none;
+            background: var(--accent);
+            color: #fff;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--transition);
+            z-index: 900;
+        }
+        .to-top.on { opacity: 0.92; pointer-events: auto; }
 
         /* --- autosave indicator --- */
+        .tr-hint {
+            font-size: 0.8rem;
+            color: var(--accent-dark);
+            background: #eaf4fb;
+            border-radius: 6px;
+            padding: 6px 9px;
+            margin: 8px 0 0;
+        }
+        .tr-hint.hidden { display: none; }
         .save-state {
             font-size: 0.85rem;
             color: #27ae60;
@@ -806,6 +933,7 @@
             <div class="pager" id="pager-top"></div>
             <div id="catalog" class="catalog"></div>
             <div class="pager" id="pager-bottom"></div>
+            <button type="button" class="to-top" id="to-top-btn" title="Top">↑</button>
             <div id="empty-state" style="text-align:center; padding: 40px; color: var(--text-light); display: none;">
                 <p style="font-size: 2rem; margin-bottom: 8px;">📭</p>
                 <p id="empty-text">No items yet. Add the first one!</p>
@@ -817,7 +945,11 @@
     <div id="modal-overlay" class="modal-overlay hidden">
         <div class="modal-content">
             <button class="modal-close" id="modal-close">×</button>
-            <h2 id="modal-title">New item</h2>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <h2 id="modal-title" style="flex:1; min-width:0;">New item</h2>
+                <button type="button" class="btn" id="tr-toggle" style="padding:6px 12px; font-size:0.85rem;">🌐</button>
+            </div>
+            <div class="tr-hint hidden" id="tr-hint"></div>
             <div class="save-state" id="save-state"></div>
             <form id="item-form">
                 <div class="form-group">
@@ -875,20 +1007,45 @@
     </div>
 
     <!-- Settings modal -->
+    <div id="toast" class="toast"></div>
+
+    <div id="import-overlay" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 520px;">
+            <button class="modal-close" id="import-choice-close">×</button>
+            <h2 id="import-choice-title" style="margin-bottom: 14px;">Where do you take the archive from?</h2>
+            <div class="exp-choice" style="flex-direction: column; gap: 8px; cursor: default;">
+                <span class="exp-txt" style="display:flex; gap:10px; align-items:flex-start;">
+                    <span class="exp-ic">🔗</span>
+                    <span><b id="imp-link-title">Link to the archive</b><small id="imp-link-desc"></small></span>
+                </span>
+                <div class="link-input-wrap">
+                    <input type="text" id="import-link-input" placeholder="https://litter.catbox.moe/..." autocomplete="off">
+                    <span class="link-ok hidden" id="link-ok">✔</span>
+                </div>
+                <button type="button" class="btn btn-primary" id="import-link-go" style="width:100%; justify-content:center;">Download and import</button>
+            </div>
+            <div class="exp-sep"></div>
+            <button type="button" class="exp-choice" id="import-disk-btn">
+                <span class="exp-ic">📁</span>
+                <span class="exp-txt"><b id="imp-disk-title">File on this device</b><small id="imp-disk-desc"></small></span>
+            </button>
+        </div>
+    </div>
+
     <div id="export-overlay" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 520px;">
             <button class="modal-close" id="export-choice-close">×</button>
             <h2 id="export-choice-title" style="margin-bottom: 14px;">What do you want to export?</h2>
+            <button type="button" class="exp-choice" id="export-send-btn">
+                <span class="exp-ic">☁</span>
+                <span class="exp-txt"><b id="exp-send-title">Send online</b><small id="exp-send-desc"></small></span>
+            </button>
+            <div class="link-box" id="link-box"></div>
+            <div class="exp-sep"></div>
             <button type="button" class="exp-choice" id="export-full-btn">
                 <span class="exp-ic">📦</span>
                 <span class="exp-txt"><b id="exp-full-title">Full catalog</b><small id="exp-full-desc"></small></span>
             </button>
-            <button type="button" class="exp-choice" id="export-diff-btn">
-                <span class="exp-ic">🔄</span>
-                <span class="exp-txt"><b id="exp-diff-title">Only the changes</b><small id="exp-diff-desc"></small></span>
-            </button>
-            <div class="sync-line" id="sync-line"></div>
-            <button type="button" class="btn" id="sync-reset-btn" style="width:100%; justify-content:center; margin-top:8px;">Reset the sync point</button>
         </div>
     </div>
 
@@ -1032,6 +1189,9 @@
                     exportRestoreError: 'This archive copy is no longer available.',
                     prevPage: 'Previous page',
                     nextPage: 'Next page',
+                    firstPage: 'First page',
+                    lastPage: 'Last page',
+                    jumpPage: 'Jump to page',
                     searchPlaceholder2: 'Search the whole catalog...',
                     share: '\u2197 Share',
                     saveFile: '\u2b07 Save',
@@ -1082,7 +1242,38 @@
                     sumDeleted: 'Deleted',
                     sumSkipped: 'Deletions ignored (not in catalog)',
                     importDiffWarn: 'This file contains CHANGES ONLY, not a whole catalog.\n\nIn the file: {incoming} change(s).\nIn your catalog now: {current} item(s).\n\nThe catalog will NOT be wiped: matching items get updated, new ones are added, items deleted by the sender are removed here too.\n\nApply these changes?',
-                    importDiffDone: 'Changes applied'
+                    importDiffDone: 'Changes applied',
+                    sendOnline: '\u2601 Send online',
+                    uploaderLabel: 'Service',
+                    uploaderAuto: 'Automatic (try one after another)',
+                    sendOnlineDesc: 'Packs a fresh archive and uploads it right away, nothing is saved on this device. The link appears below and lives 72 hours.',
+                    buildingArchive: 'packing the archive...',
+                    sendingVia: 'uploading to {name}...',
+                    sendOkVia: 'Uploaded to {name}. The link is below \u2014 copy it or share it.',
+                    sendFailAll: 'Upload failed:',
+                    sending: 'Uploading...',
+                    sendOk: 'Uploaded. The link is in the export window \u2014 copy it or share it.',
+                    sendFail: 'Upload failed ({err}). The archive is saved on this device, send it as a file.',
+                    linkTitle: 'Last link',
+                    linkNone: 'No link yet. Export the catalog and press \"Send online\".',
+                    linkExpires: 'valid until {date}',
+                    linkOneShot: 'file.io deletes the file after the first download, so the link works once.',
+                    copyBtn: 'Copy',
+                    copied: 'Link copied',
+                    copyFail: 'Could not copy. Select the text by hand.',
+                    importTitle: 'Where do you take the archive from?',
+                    importFromDisk: 'File on this device',
+                    importFromDiskDesc: 'Pick a .zip or .json archive from the device storage.',
+                    importFromLink: 'Link to the archive',
+                    importFromLinkDesc: 'Paste the link the sender gave you \u2014 the archive is downloaded and imported right away.',
+                    importLinkGo: 'Download and import',
+                    importLinkEmpty: 'Paste the link first.',
+                    importLinkBad: 'Could not download the file ({err}). The link may already be used up \u2014 file.io removes the file after the first download.',
+                    trShow: '\u{1F310} {lang}',
+                    trBack: '\u{1F310} source',
+                    trWorking: 'translating...',
+                    trFailed: 'Translation service is not reachable right now.',
+                    trHint: 'Machine translation \u2014 you can correct it, corrections are kept.'
                 },
                 ru: {
                     title: '📦 Сувениры',
@@ -1170,6 +1361,9 @@
                     exportRestoreError: 'Эта копия архива больше недоступна.',
                     prevPage: 'Предыдущая страница',
                     nextPage: 'Следующая страница',
+                    firstPage: 'Первая страница',
+                    lastPage: 'Последняя страница',
+                    jumpPage: 'Перейти на страницу',
                     searchPlaceholder2: 'Поиск по всему каталогу...',
                     share: '\u2197 Поделиться',
                     saveFile: '\u2b07 Сохранить',
@@ -1220,7 +1414,38 @@
                     sumDeleted: 'Удалено',
                     sumSkipped: 'Удаления пропущены (нет в каталоге)',
                     importDiffWarn: 'В этом файле ТОЛЬКО ИЗМЕНЕНИЯ, а не весь каталог.\n\nВ файле: {incoming} изм.\nСейчас в каталоге: {current} тов.\n\nКаталог НЕ будет очищен: совпавшие товары обновятся, новые добавятся, удалённые отправителем — удалятся и здесь.\n\nПрименить изменения?',
-                    importDiffDone: 'Изменения применены'
+                    importDiffDone: 'Изменения применены',
+                    sendOnline: '\u2601 Отправить онлайн',
+                    uploaderLabel: 'Сервис',
+                    uploaderAuto: 'Автоматически (по очереди)',
+                    sendOnlineDesc: 'Собирает свежий архив и сразу отправляет его, на устройстве ничего не сохраняется. Ссылка появится ниже и живёт 72 часа.',
+                    buildingArchive: 'собираю архив...',
+                    sendingVia: 'загрузка на {name}...',
+                    sendOkVia: 'Загружено на {name}. Ссылка ниже — скопируйте или отправьте её.',
+                    sendFailAll: 'Загрузить не удалось:',
+                    sending: 'Загрузка...',
+                    sendOk: 'Загружено. Ссылка в окне экспорта — скопируйте или отправьте её.',
+                    sendFail: 'Загрузить не удалось ({err}). Архив сохранён на устройстве, отправьте его файлом.',
+                    linkTitle: 'Последняя ссылка',
+                    linkNone: 'Ссылки пока нет. Сделайте экспорт и нажмите «Отправить онлайн».',
+                    linkExpires: 'действует до {date}',
+                    linkOneShot: 'file.io удаляет файл после первого скачивания, поэтому ссылка одноразовая.',
+                    copyBtn: 'Копировать',
+                    copied: 'Ссылка скопирована',
+                    copyFail: 'Скопировать не удалось. Выделите текст вручную.',
+                    importTitle: 'Откуда берём архив?',
+                    importFromDisk: 'Файл на устройстве',
+                    importFromDiskDesc: 'Выбрать .zip или .json из памяти устройства.',
+                    importFromLink: 'Ссылка на архив',
+                    importFromLinkDesc: 'Вставьте ссылку, которую прислал отправитель — архив скачается и импортируется сразу.',
+                    importLinkGo: 'Скачать и импортировать',
+                    importLinkEmpty: 'Сначала вставьте ссылку.',
+                    importLinkBad: 'Скачать файл не удалось ({err}). Возможно, ссылка уже использована — file.io удаляет файл после первого скачивания.',
+                    trShow: '\u{1F310} {lang}',
+                    trBack: '\u{1F310} оригинал',
+                    trWorking: 'перевод...',
+                    trFailed: 'Сервис перевода сейчас недоступен.',
+                    trHint: 'Машинный перевод — можно поправить, правки сохранятся.'
                 }
             };
 
@@ -1250,6 +1475,7 @@
                 } catch (e) {}
             }
 
+            /* updateRateUI() runs first, flashRate() paints over it afterwards */
             function saveRate(rate, source) {
                 exchangeRate = rate;
                 rateSource = source;
@@ -1291,7 +1517,7 @@
                 ];
                 for (const url of urls) {
                     try {
-                        const res = await fetch(url, { cache: 'no-store' });
+                        const res = await fetch(directLink(url), { cache: 'no-store' });
                         if (!res.ok) continue;
                         const data = await res.json();
                         let dalasiPerUsd = null;
@@ -1332,6 +1558,8 @@
                 applySearch();
                 updateRateUI();
                 renderSyncLine();
+                updateTrButton();
+                setTimeout(translateCurrentPage, 60);
             }
 
             function applyTranslations() {
@@ -1529,6 +1757,7 @@
             }
 
             let allItems = [];
+            let pageItems = [];
 
             /* ---------- diff sync ----------
                Every item carries updatedAt. Deleting keeps a tiny tombstone
@@ -1639,6 +1868,8 @@
             const updateRateBtn = document.getElementById('update-rate-btn');
             const viewBtn = document.getElementById('view-btn');
             const saveState = document.getElementById('save-state');
+            const trToggle = document.getElementById('tr-toggle');
+            const trHint = document.getElementById('tr-hint');
             const exportListEl = document.getElementById('export-list');
             const checkDbBtn = document.getElementById('check-db-btn');
             const exportOverlay = document.getElementById('export-overlay');
@@ -1646,9 +1877,19 @@
             const exportFullBtn = document.getElementById('export-full-btn');
             const exportDiffBtn = document.getElementById('export-diff-btn');
             const syncResetBtn = document.getElementById('sync-reset-btn');
+            const exportSendBtn = document.getElementById('export-send-btn');
+            const linkBox = document.getElementById('link-box');
+            const toastEl = document.getElementById('toast');
+            const linkOk = document.getElementById('link-ok');
+            const importOverlay = document.getElementById('import-overlay');
+            const importChoiceClose = document.getElementById('import-choice-close');
+            const importDiskBtn = document.getElementById('import-disk-btn');
+            const importLinkInput = document.getElementById('import-link-input');
+            const importLinkGo = document.getElementById('import-link-go');
             const checkResultEl = document.getElementById('check-result');
             const pagerTop = document.getElementById('pager-top');
             const pagerBottom = document.getElementById('pager-bottom');
+            const toTopBtn = document.getElementById('to-top-btn');
 
             const VIEW_ORDER = ['large', 'two', 'four', 'list'];
             const VIEW_ICON = { large: '▦', two: '◫', four: '▩', list: '☰' };
@@ -1656,36 +1897,58 @@
             let currentView = localStorage.getItem('souvenirs_view') || 'large';
             if (VIEW_ORDER.indexOf(currentView) === -1) currentView = 'large';
             const PAGE_SIZE = { large: 10, two: 20, four: 48, list: 75 };
+            const PAGE_KEY = 'souvenirs_page';
             let currentPage = 1;
+            try {
+                const savedPage = parseInt(localStorage.getItem(PAGE_KEY), 10);
+                if (savedPage > 0) currentPage = savedPage;
+            } catch (e) {}
+            function rememberPage() {
+                try { localStorage.setItem(PAGE_KEY, String(currentPage)); } catch (e) {}
+            }
 
             function buildPager(el, pages) {
                 el.innerHTML = '';
                 if (pages <= 1) { el.classList.remove('on'); return; }
                 el.classList.add('on');
-                const prev = document.createElement('button');
-                prev.type = 'button';
-                prev.innerHTML = '\u2039';
-                prev.title = t('prevPage');
-                prev.disabled = currentPage <= 1;
-                prev.addEventListener('click', () => goToPage(currentPage - 1));
-                const label = document.createElement('div');
-                label.className = 'pager-label';
-                label.innerHTML = currentPage + ' <small>(' + pages + ')</small>';
-                const next = document.createElement('button');
-                next.type = 'button';
-                next.innerHTML = '\u203A';
-                next.title = t('nextPage');
-                next.disabled = currentPage >= pages;
-                next.addEventListener('click', () => goToPage(currentPage + 1));
-                el.appendChild(prev);
-                el.appendChild(label);
-                el.appendChild(next);
+                const mk = (glyph, title, disabled, page) => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.innerHTML = glyph;
+                    b.title = title;
+                    b.disabled = disabled;
+                    b.addEventListener('click', () => goToPage(page));
+                    return b;
+                };
+                el.appendChild(mk('\u00AB', t('firstPage'), currentPage <= 1, 1));
+                el.appendChild(mk('\u2039', t('prevPage'), currentPage <= 1, currentPage - 1));
+
+                /* the number itself is a jump list, so page 9 of 14 is one tap away */
+                const sel = document.createElement('select');
+                sel.className = 'pager-select';
+                sel.title = t('jumpPage');
+                for (let i = 1; i <= pages; i++) {
+                    const o = document.createElement('option');
+                    o.value = i;
+                    o.textContent = i + ' / ' + pages;
+                    if (i === currentPage) o.selected = true;
+                    sel.appendChild(o);
+                }
+                sel.addEventListener('change', () => goToPage(parseInt(sel.value, 10)));
+                el.appendChild(sel);
+
+                el.appendChild(mk('\u203A', t('nextPage'), currentPage >= pages, currentPage + 1));
+                el.appendChild(mk('\u00BB', t('lastPage'), currentPage >= pages, pages));
             }
             function goToPage(n) {
                 currentPage = n;
+                rememberPage();
                 applySearch();
-                const top = document.querySelector('main');
-                if (top && top.scrollIntoView) top.scrollIntoView({ block: 'start' });
+                scrollToTop();
+            }
+            function scrollToTop() {
+                try { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+                catch (e) { window.scrollTo(0, 0); }
             }
 
             function updateViewButton() {
@@ -1712,11 +1975,13 @@
                 if (currentPage > pages) currentPage = pages;
                 if (currentPage < 1) currentPage = 1;
                 const start = (currentPage - 1) * size;
-                items.slice(start, start + size).forEach(item => catalogEl.appendChild(
+                pageItems = items.slice(start, start + size);
+                pageItems.forEach(item => catalogEl.appendChild(
                     currentView === 'list' ? createListRow(item) : createCard(item)
                 ));
                 buildPager(pagerTop, pages);
                 buildPager(pagerBottom, pages);
+                setTimeout(translateCurrentPage, 60);
             }
 
             function itemMetaText(item) {
@@ -1732,7 +1997,7 @@
                     if (item.dimensions.height) dims.push(t('heightShort') + item.dimensions.height);
                 }
                 if (dims.length) parts.push(t('dimsIcon') + dims.join(' \u00D7 ') + t('dimsUnit'));
-                if (item.materials) parts.push(t('materialsIcon') + item.materials);
+                if (item.materials) parts.push(t('materialsIcon') + disp(item, 'materials'));
                 return parts;
             }
 
@@ -1752,7 +2017,7 @@
                         try {
                             await putItem(makeTombstone(item));   /* keeps the deletion syncable */
                             await refreshCatalog();
-                        } catch (err) { alert(t('deleteError') + err.message); }
+                        } catch (err) { notify(t('deleteError') + err.message, 'err'); }
                     }
                 });
                 actions.appendChild(editBtn);
@@ -1779,7 +2044,7 @@
                 main.className = 'list-main';
                 const title = document.createElement('div');
                 title.className = 'list-title';
-                title.textContent = item.name || t('noName');
+                title.textContent = disp(item, 'name') || t('noName');
                 const sub = document.createElement('div');
                 sub.className = 'list-sub';
                 const usdVal = gmdToUsd(item.price);
@@ -1825,7 +2090,7 @@
                     const desc = document.createElement('div');
                     desc.style.fontSize = '0.9rem';
                     desc.style.whiteSpace = 'pre-wrap';
-                    desc.textContent = item.description;
+                    desc.textContent = disp(item, 'description');
                     body.appendChild(desc);
                 }
                 const dateDiv = document.createElement('div');
@@ -1878,7 +2143,7 @@
                 body.className = 'card-body';
                 const title = document.createElement('h3');
                 title.className = 'card-title';
-                title.textContent = item.name || t('noName');
+                title.textContent = disp(item, 'name') || t('noName');
                 body.appendChild(title);
                 const price = document.createElement('div');
                 price.className = 'card-price';
@@ -1900,7 +2165,7 @@
                 if (item.description) {
                     const desc = document.createElement('div');
                     desc.className = 'card-desc';
-                    desc.textContent = item.description;
+                    desc.textContent = disp(item, 'description');
                     body.appendChild(desc);
                 }
                 const dateDiv = document.createElement('div');
@@ -1919,7 +2184,7 @@
                     applySearch();
                 }).catch(err => {
                     console.error('Catalog load error:', err);
-                    alert(t('loadError') + err.message);
+                    notify(t('loadError') + err.message, 'err');
                 });
             }
 
@@ -1927,6 +2192,7 @@
             function searchHaystack(item) {
                 const parts = [
                     item.name, item.description, item.materials, item.weight,
+                    disp(item, 'name'), disp(item, 'description'), disp(item, 'materials'),
                     (item.price == null ? '' : item.price), formatDate(item.dateAdded)
                 ];
                 for (const key in item) {
@@ -1959,6 +2225,88 @@
             fPrice.addEventListener('input', updateFormUsdPreview);
             fWeight.addEventListener('input', updateFormKgPreview);
 
+            /* form translation state: the inputs hold either the source text
+               or its translation, never both at once */
+            let trShowing = false;          /* false = source, true = translation */
+            let trTarget = 'ru';            /* language shown when trShowing */
+            let trDraft = {};               /* {ru:{name,materials,description,src}} */
+            let trSourceCache = null;       /* source values kept while a translation is shown */
+            let trTimer = null;
+
+            function formValues() {
+                return { name: fName.value, materials: fMaterials.value, description: fDescription.value };
+            }
+            function fillForm(vals) {
+                fName.value = vals.name || '';
+                fMaterials.value = vals.materials || '';
+                fDescription.value = vals.description || '';
+            }
+            function formSourceLang() {
+                const v = formValues();
+                return hasCyrillic(v.name + v.materials + v.description) ? 'ru' : 'en';
+            }
+            function updateTrButton() {
+                if (!trToggle) return;
+                if (trShowing) {
+                    trToggle.textContent = t('trBack');
+                    trHint.textContent = t('trHint');
+                    trHint.classList.remove('hidden');
+                } else {
+                    const from = formSourceLang();
+                    trTarget = (from === 'ru') ? 'en' : 'ru';
+                    trToggle.textContent = t('trShow').replace('{lang}', trTarget.toUpperCase());
+                    trHint.classList.add('hidden');
+                }
+            }
+            /* typing in the source language quietly prepares the translation */
+            function scheduleBackgroundTranslation() {
+                if (trShowing) return;
+                clearTimeout(trTimer);
+                trTimer = setTimeout(async () => {
+                    const vals = formValues();
+                    const sig = [vals.name, vals.materials, vals.description].join('\u0001');
+                    if (!sig.replace(/\u0001/g, '').trim()) return;
+                    const from = formSourceLang();
+                    const to = (from === 'ru') ? 'en' : 'ru';
+                    if (trDraft[to] && trDraft[to].src === sig) return;
+                    const out = await translateFields(vals, from, to);
+                    if (!out) return;
+                    out.src = sig;
+                    trDraft[to] = out;
+                }, 1500);
+            }
+            async function toggleTranslationView() {
+                if (trShowing) {                       /* back to the source text */
+                    const edited = formValues();
+                    edited.src = trSourceCache ? [trSourceCache.name, trSourceCache.materials, trSourceCache.description].join('\u0001') : '';
+                    trDraft[trTarget] = edited;
+                    fillForm(trSourceCache || {});
+                    trSourceCache = null;
+                    trShowing = false;
+                    updateTrButton();
+                    autoSave();
+                    return;
+                }
+                const vals = formValues();
+                const from = formSourceLang();
+                const to = (from === 'ru') ? 'en' : 'ru';
+                trTarget = to;
+                const label = trToggle.textContent;
+                trToggle.disabled = true;
+                trToggle.textContent = t('trWorking');
+                /* always asked again on switching, as requested */
+                const out = await translateFields(vals, from, to);
+                trToggle.disabled = false;
+                if (!out) { trToggle.textContent = label; notify(t('trFailed'), 'err'); return; }
+                out.src = [vals.name, vals.materials, vals.description].join('\u0001');
+                trDraft[to] = out;
+                trSourceCache = vals;
+                fillForm(out);
+                trShowing = true;
+                updateTrButton();
+                autoSave();
+            }
+
             let saveStateTimer = null;
             function showSaveState(text, sticky) {
                 if (!saveState) return;
@@ -1970,17 +2318,25 @@
 
             function formHasContent() {
                 if (tempPhotos.length) return true;
+                if (trShowing && trSourceCache) return true;
                 return [fName, fPrice, fWeight, fLength, fWidth, fHeight, fMaterials, fDescription]
                     .some(el => String(el.value).trim() !== '');
             }
 
             function collectFormItem() {
+                const shown = formValues();
+                const source = trShowing ? (trSourceCache || shown) : shown;
+                if (trShowing) {
+                    const edited = { name: shown.name, materials: shown.materials, description: shown.description };
+                    edited.src = [source.name, source.materials, source.description].join('\u0001');
+                    trDraft[trTarget] = edited;
+                }
                 const g = parseFloat(fWeight.value);
                 const price = parseFloat(fPrice.value);
                 const base = editingItem ? Object.assign({}, editingItem) : {};
                 return Object.assign(base, {
                     id: editingItem ? editingItem.id : generateId(),
-                    name: fName.value.trim(),
+                    name: (source.name || '').trim(),
                     price: (!isNaN(price) && price >= 0) ? price : null,
                     weight: (!isNaN(g) && g > 0) ? String(g) : '',
                     dimensions: {
@@ -1988,8 +2344,9 @@
                         width: fWidth.value ? parseFloat(fWidth.value) : 0,
                         height: fHeight.value ? parseFloat(fHeight.value) : 0
                     },
-                    materials: fMaterials.value.trim(),
-                    description: fDescription.value.trim(),
+                    materials: (source.materials || '').trim(),
+                    description: (source.description || '').trim(),
+                    i18n: trDraft,
                     dateAdded: (editingItem && editingItem.dateAdded) ? editingItem.dateAdded : new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
                     deleted: false,
@@ -2024,6 +2381,10 @@
                 el.addEventListener('change', autoSave);
                 el.addEventListener('blur', autoSave);
             });
+            [fName, fMaterials, fDescription].forEach(el => {
+                el.addEventListener('input', scheduleBackgroundTranslation);
+            });
+            trToggle.addEventListener('click', toggleTranslationView);
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'hidden') autoSave();
             });
@@ -2046,6 +2407,8 @@
                 fPhotosGallery.value = '';
                 fPhotosCamera.value = '';
                 if (saveState) { saveState.textContent = ''; saveState.classList.remove('on'); }
+                trShowing = false; trSourceCache = null; trDraft = {};
+                updateTrButton();
                 updatePhotoPreview();
                 modalOverlay.classList.remove('hidden');
                 fName.focus();
@@ -2066,6 +2429,10 @@
                 fHeight.value = dimsOf.height || '';
                 fMaterials.value = item.materials || '';
                 fDescription.value = item.description || '';
+                trShowing = false; trSourceCache = null;
+                trDraft = {};
+                if (item.i18n) { for (const k in item.i18n) trDraft[k] = item.i18n[k]; }
+                updateTrButton();
                 if (saveState) { saveState.textContent = ''; saveState.classList.remove('on'); }
                 fPhotosGallery.value = '';
                 fPhotosCamera.value = '';
@@ -2115,7 +2482,7 @@
                     updatePhotoPreview();
                     await autoSave();
                 } catch (err) {
-                    alert(t('imageError') + err.message);
+                    notify(t('imageError') + err.message, 'err');
                 }
             }
 
@@ -2199,13 +2566,25 @@
             settingsOverlay.addEventListener('click', (e) => {
                 if (e.target === settingsOverlay) closeSettings();
             });
+            let rateFlashTimer = null;
+            function flashRate(msg) {
+                const el = document.getElementById('rate-source-text');
+                if (!el) return;
+                clearTimeout(rateFlashTimer);
+                el.textContent = msg;
+                el.classList.add('rate-flash');
+                rateFlashTimer = setTimeout(() => {
+                    el.classList.remove('rate-flash');
+                    updateRateUI();
+                }, 2000);
+            }
             saveRateBtn.addEventListener('click', () => {
                 let val = parseFloat(fCustomRate.value);
-                if (!val || val <= 0 || isNaN(val)) { alert(t('priceInvalid')); return; }
+                if (!val || val <= 0 || isNaN(val)) { flashRate(t('priceInvalid')); return; }
                 /* someone typing 0.0136 clearly means the old direction - accept it anyway */
                 if (val < 1) val = 1 / val;
                 saveRate(Math.round(val * 100) / 100, 'manual');
-                alert(t('rateSaved'));
+                flashRate(t('rateSaved'));
             });
             updateRateBtn.addEventListener('click', async () => {
                 updateRateBtn.disabled = true;
@@ -2213,7 +2592,7 @@
                 const ok = await fetchRateFromApi();
                 updateRateBtn.disabled = false;
                 updateRateBtn.textContent = t('updateRate');
-                alert(ok ? t('rateUpdated') : t('rateUpdateError'));
+                flashRate(ok ? t('rateUpdated') : t('rateUpdateError'));
             });
 
             /* --- pinch to zoom / pan --- */
@@ -2305,7 +2684,7 @@
                     const blob = new Blob([bin.bytes], { type: bin.mime });
                     downloadBlob(blob, 'photo_' + (lbIndex + 1) + '_' + new Date().toISOString().slice(0, 10) + '.' + bin.ext);
                 } catch (err) {
-                    alert(t('photoSaveError') + ' ' + err.message);
+                    notify(t('photoSaveError') + ' ' + err.message, 'err');
                 }
             });
 
@@ -2735,7 +3114,7 @@
             }
 
             async function shareArchive(rec) {
-                if (!rec.blob) { alert(t('exportRestoreError')); return; }
+                if (!rec.blob) { notify(t('exportRestoreError'), 'err'); return; }
                 let file = null;
                 try { file = new File([rec.blob], rec.name, { type: 'application/zip' }); } catch (e) {}
                 if (file && navigator.share) {
@@ -2749,12 +3128,12 @@
                         if (err && err.name === 'AbortError') return;   /* user closed the sheet */
                         console.warn('share failed', err);
                         downloadBlob(rec.blob, rec.name);
-                        alert(t('shareError').replace('{err}', (err && (err.name || err.message)) || '?'));
+                        notify(t('shareError').replace('{err}', (err && (err.name || err.message)) || '?'), 'err');
                         return;
                     }
                 }
                 downloadBlob(rec.blob, rec.name);
-                alert(t('shareFallback'));
+                notify(t('shareFallback'), 'info');
             }
             function summaryRows(rec) {
                 const rows = [];
@@ -2792,7 +3171,9 @@
                     exportListEl.appendChild(p);
                     return;
                 }
-                list.forEach(rec => {
+                const lastExport = list.filter(r => r.kind !== 'import')[0];
+                const lastImport = list.filter(r => r.kind === 'import')[0];
+                [lastExport, lastImport].filter(Boolean).forEach(rec => {
                     const isImport = rec.kind === 'import';
                     const wrap = document.createElement('div');
                     wrap.className = 'hist-item';
@@ -2830,7 +3211,7 @@
                         dl.textContent = t('saveFile');
                         dl.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            if (!rec.blob) { alert(t('exportRestoreError')); return; }
+                            if (!rec.blob) { notify(t('exportRestoreError'), 'err'); return; }
                             downloadBlob(rec.blob, rec.name);
                         });
                         row.appendChild(dl);
@@ -2865,6 +3246,294 @@
                 exportListEl.appendChild(hint);
             }
 
+            function notifyImport(text) { notify(text, 'ok'); }
+            /* ---------- notifications: a coloured plaque, never a popup ---------- */
+            let toastTimer = null;
+            function notify(msg, type) {
+                if (!toastEl) return;
+                toastEl.textContent = String(msg == null ? '' : msg);
+                toastEl.className = 'toast on ' + (type || 'info');
+                clearTimeout(toastTimer);
+                const ms = (type === 'err') ? 7000 : 4000;
+                toastTimer = setTimeout(() => toastEl.classList.remove('on'), ms);
+            }
+            document.getElementById('toast').addEventListener('click', function () {
+                this.classList.remove('on');
+            });
+
+            /* ---------- machine translation ----------
+               Item text is stored once per language in item.i18n so the
+               service is asked only when the source text really changed. */
+            const TR_FIELDS = ['name', 'materials', 'description'];
+            const trCache = {};
+
+            function hasCyrillic(str) { return /[\u0400-\u04FF]/.test(str || ''); }
+            function srcSignature(item) {
+                return TR_FIELDS.map(f => String(item[f] == null ? '' : item[f])).join('\u0001');
+            }
+            function sourceLangOf(item) { return hasCyrillic(srcSignature(item)) ? 'ru' : 'en'; }
+
+            async function translateText(text, from, to) {
+                const src = (text || '').trim();
+                if (!src || from === to) return src;
+                const key = from + '|' + to + '|' + src;
+                if (trCache[key]) return trCache[key];
+                /* 1: Google's public endpoint handles long text and keeps line breaks */
+                try {
+                    const u = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' +
+                        from + '&tl=' + to + '&dt=t&q=' + encodeURIComponent(src);
+                    const r = await fetch(u);
+                    if (r.ok) {
+                        const d = await r.json();
+                        if (d && Array.isArray(d[0])) {
+                            const out = d[0].map(part => (part && part[0]) ? part[0] : '').join('');
+                            if (out.trim()) { trCache[key] = out; return out; }
+                        }
+                    }
+                } catch (e) {}
+                /* 2: MyMemory, no key needed, but short strings only */
+                try {
+                    const u = 'https://api.mymemory.translated.net/get?q=' +
+                        encodeURIComponent(src.slice(0, 480)) + '&langpair=' + from + '|' + to;
+                    const r = await fetch(u);
+                    if (r.ok) {
+                        const d = await r.json();
+                        const out = d && d.responseData && d.responseData.translatedText;
+                        if (out && !/MYMEMORY WARNING|QUERY LENGTH/i.test(out)) { trCache[key] = out; return out; }
+                    }
+                } catch (e) {}
+                return null;
+            }
+
+            async function translateFields(values, from, to) {
+                const out = {};
+                let any = false;
+                for (const f of TR_FIELDS) {
+                    const v = (values[f] || '').trim();
+                    if (!v) { out[f] = ''; continue; }
+                    const tr = await translateText(v, from, to);
+                    out[f] = tr || '';
+                    if (tr) any = true;
+                }
+                return any ? out : null;
+            }
+
+            /* what to show for a field in the language the app is switched to */
+            function disp(item, field) {
+                if (item && item.i18n && item.i18n[currentLang] && item.i18n[currentLang][field]) {
+                    return item.i18n[currentLang][field];
+                }
+                return (item && item[field]) ? item[field] : '';
+            }
+
+            async function ensureItemTranslation(item, lang) {
+                const from = sourceLangOf(item);
+                if (lang === from) return false;
+                const sig = srcSignature(item);
+                if (!sig.replace(/\u0001/g, '').trim()) return false;
+                if (item.i18n && item.i18n[lang] && item.i18n[lang].src === sig) return false;
+                const out = await translateFields(item, from, lang);
+                if (!out) return false;
+                out.src = sig;
+                const box = {};
+                if (item.i18n) { for (const k in item.i18n) box[k] = item.i18n[k]; }
+                box[lang] = out;
+                item.i18n = box;
+                await putItem(item);           /* updatedAt untouched: translation is derived data */
+                return true;
+            }
+
+            let translatingNow = false;
+            async function translateCurrentPage() {
+                if (translatingNow) return;
+                const lang = currentLang;
+                const shown = pageItems.slice();
+                translatingNow = true;
+                try {
+                    let changed = false;
+                    for (const item of shown) {
+                        if (currentLang !== lang) break;
+                        try { if (await ensureItemTranslation(item, lang)) changed = true; }
+                        catch (e) { break; }
+                    }
+                    if (changed && currentLang === lang) applySearch();
+                } finally { translatingNow = false; }
+            }
+
+            /* ---------- file.io transfer ---------- */
+            const LINK_KEY = 'souvenirs_last_link';
+            let lastExportBlob = null, lastExportName = '';
+
+            function loadLink() {
+                try {
+                    const raw = localStorage.getItem(LINK_KEY);
+                    if (!raw) return null;
+                    const obj = JSON.parse(raw);
+                    if (!obj || !obj.link) return null;
+                    /* the link is dropped as soon as file.io says it has expired */
+                    if (obj.expires && new Date(obj.expires) < new Date()) {
+                        localStorage.removeItem(LINK_KEY);
+                        return null;
+                    }
+                    return obj;
+                } catch (e) { return null; }
+            }
+            function saveLink(obj) {
+                try { localStorage.setItem(LINK_KEY, JSON.stringify(obj)); } catch (e) {}
+                renderLinkBox();
+            }
+            function dropLink() {
+                try { localStorage.removeItem(LINK_KEY); } catch (e) {}
+                renderLinkBox();
+            }
+            async function copyText(text) {
+                try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(text);
+                        return true;
+                    }
+                } catch (e) {}
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.setAttribute('readonly', '');
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    ta.setSelectionRange(0, ta.value.length);
+                    const ok = document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    return ok;
+                } catch (e) { return false; }
+            }
+            function renderLinkBox() {
+                if (!linkBox) return;
+                const rec = loadLink();
+                linkBox.innerHTML = '';
+                const title = document.createElement('div');
+                title.className = 'lb-title';
+                title.textContent = t('linkTitle');
+                linkBox.appendChild(title);
+                if (!rec) {
+                    const none = document.createElement('div');
+                    none.style.color = 'var(--text-light)';
+                    none.textContent = t('linkNone');
+                    linkBox.appendChild(none);
+                    return;
+                }
+                const row = document.createElement('div');
+                row.className = 'link-row';
+                const txt = document.createElement('span');
+                txt.className = 'link-text';
+                txt.textContent = rec.link;          /* plain text, not clickable */
+                const shareB = document.createElement('button');
+                shareB.type = 'button';
+                shareB.title = t('share');
+                shareB.textContent = '\u2197';
+                shareB.addEventListener('click', async () => {
+                    const payload = { title: rec.name || 'catalog', text: rec.link, url: rec.link };
+                    try {
+                        if (navigator.share) { await navigator.share(payload); return; }
+                    } catch (e) {
+                        if (e && e.name === 'AbortError') return;
+                    }
+                    const ok = await copyText(rec.link);
+                    notify(ok ? t('copied') : t('copyFail'), ok ? 'ok' : 'err');
+                });
+                const copyB = document.createElement('button');
+                copyB.type = 'button';
+                copyB.title = t('copyBtn');
+                copyB.textContent = '\u29C9';
+                copyB.addEventListener('click', async () => {
+                    const ok = await copyText(rec.link);
+                    notify(ok ? t('copied') : t('copyFail'), ok ? 'ok' : 'err');
+                });
+                row.appendChild(txt);
+                row.appendChild(shareB);
+                row.appendChild(copyB);
+                linkBox.appendChild(row);
+                const meta = document.createElement('div');
+                meta.className = 'link-meta';
+                meta.textContent = (rec.provider ? rec.provider + ' \u00B7 ' : '') +
+                    (rec.name ? rec.name + ' \u00B7 ' : '') +
+                    (rec.size ? formatSize(rec.size) + ' \u00B7 ' : '') +
+                    formatDate(rec.date) +
+                    (rec.expires ? ' \u00B7 ' + t('linkExpires').replace('{date}', formatDate(rec.expires)) : '') +
+                    (rec.provider && rec.provider.indexOf('file.io') === 0 ? ' \u00B7 ' + t('linkOneShot') : '');
+                linkBox.appendChild(meta);
+            }
+
+
+            /* ---------- upload providers ----------
+               file.io refuses browser requests (no CORS header), so the app
+               walks through several services until one answers. Each returns
+               a DIRECT file link so the import side can fetch it back. */
+            const UPLOADERS = [
+                {
+                    id: 'litterbox',
+                    name: 'Litterbox',
+                    life: 72 * 3600 * 1000,
+                    async up(blob, name) {
+                        const fd = new FormData();
+                        fd.append('reqtype', 'fileupload');
+                        fd.append('time', '72h');
+                        fd.append('fileToUpload', blob, name);
+                        const r = await fetch('https://litterbox.catbox.moe/resources/internals/api.php',
+                            { method: 'POST', body: fd });
+                        const txt = (await r.text()).trim();
+                        if (!r.ok || txt.indexOf('http') !== 0) throw new Error(txt.slice(0, 90) || ('HTTP ' + r.status));
+                        return txt;
+                    }
+                }
+            ];
+            /* tmpfiles gives a preview page, the file itself lives under /dl/ */
+            function directLink(url) {
+                if (/^https?:\/\/tmpfiles\.org\/(?!dl\/)/.test(url)) {
+                    return url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+                }
+                return url;
+            }
+
+
+            /* makes a fresh archive on the fly and uploads it, nothing is saved locally */
+            async function sendToFileIo() {
+                const prov = UPLOADERS[0];
+                const descEl = document.getElementById('exp-send-desc');
+                const oldText = descEl.textContent;
+                exportSendBtn.disabled = true;
+                try {
+                    descEl.textContent = t('buildingArchive');
+                    const built = await buildArchive('full');
+                    if (!built) { notify(t('exportEmpty'), 'err'); return; }
+                    lastExportBlob = built.blob;
+                    lastExportName = built.fileName;
+
+                    descEl.textContent = t('sendingVia').replace('{name}', prov.name);
+                    const link = await prov.up(built.blob, built.fileName);
+                    saveLink({
+                        link: link,
+                        provider: prov.name,
+                        name: built.fileName,
+                        size: built.blob.size,
+                        date: new Date().toISOString(),
+                        expires: prov.life ? new Date(Date.now() + prov.life).toISOString() : null
+                    });
+                    try {
+                        await rememberExport(built.fileName, built.blob, built.count, 'full', built.deleted);
+                        await renderExportHistory();
+                    } catch (e) { console.warn('export history', e); }
+                    notify(t('sendOkVia').replace('{name}', prov.name) +
+                        '\n' + t('sumTotal') + ': ' + built.count + ' \u00B7 ' + formatSize(built.blob.size), 'ok');
+                } catch (err) {
+                    notify(t('sendFailAll') + ' ' + ((err && (err.message || err.name)) || '?'), 'err');
+                } finally {
+                    exportSendBtn.disabled = false;
+                    descEl.textContent = oldText;
+                    renderLinkBox();
+                }
+            }
+
             function syncDateText() {
                 return lastSyncAt ? formatDate(lastSyncAt) : t('syncNever');
             }
@@ -2884,91 +3553,103 @@
                 document.getElementById('exp-full-title').textContent = t('expFull');
                 document.getElementById('exp-full-desc').textContent =
                     t('expFullDesc').replace('{n}', live.length);
-                document.getElementById('exp-diff-title').textContent = t('expDiff');
-                document.getElementById('exp-diff-desc').textContent =
-                    t('expDiffDesc').replace('{n}', changes.length).replace('{date}', syncDateText());
                 document.getElementById('export-full-btn').disabled = live.length === 0;
-                document.getElementById('export-diff-btn').disabled = changes.length === 0;
-                document.getElementById('sync-reset-btn').textContent = t('syncReset');
+                document.getElementById('exp-send-title').textContent =
+                    t('sendOnline') + ' (' + UPLOADERS[0].name + ')';
+                document.getElementById('exp-send-desc').textContent = t('sendOnlineDesc');
                 renderSyncLine();
+                renderLinkBox();
                 exportOverlay.classList.remove('hidden');
+            }
+
+            /* builds the .zip in memory; nothing touches the disk here */
+            async function buildArchive(mode) {
+                const all = await getAllItems();
+                const selected = (mode === 'diff')
+                    ? all.filter(changedSinceSync)
+                    : all.filter(it => !it.deleted);
+                if (selected.length === 0) return null;
+
+                const exportedAt = new Date().toISOString();
+                const enc = new TextEncoder();
+                const files = [];
+                let deletedCount = 0;
+                const payloadItems = selected.map(item => {
+                    if (item.deleted) { deletedCount++; return Object.assign({}, item, { photos: [] }); }
+                    const refs = [];
+                    (item.photos || []).forEach((photo, i) => {
+                        const bin = dataUrlToBytes(photo);
+                        if (!bin) return;
+                        const fname = 'photos/' + item.id + '_' + (i + 1) + '.' + bin.ext;
+                        files.push({ name: fname, data: bin.bytes, compress: false });
+                        refs.push(fname);
+                    });
+                    return Object.assign({}, item, { photos: refs });
+                });
+                const payload = {
+                    version: 3,
+                    app: 'SouvenirsCatalog',
+                    exportType: (mode === 'diff') ? 'diff' : 'full',
+                    since: (mode === 'diff') ? (lastSyncAt || null) : null,
+                    exportedAt: exportedAt,
+                    currency: 'GMD',
+                    exchangeRate,
+                    rateBasis: 'GMD_per_USD',
+                    rateSource,
+                    counts: { items: payloadItems.length, deleted: deletedCount },
+                    items: payloadItems
+                };
+                files.unshift({ name: 'catalog.json', data: enc.encode(JSON.stringify(payload)) });
+                files.push({ name: 'README.txt', data: enc.encode(
+                    'Souvenirs Catalog ' + (mode === 'diff' ? 'CHANGES' : 'FULL BACKUP') + '\r\n' +
+                    'Records: ' + payloadItems.length + (deletedCount ? ' (deletions: ' + deletedCount + ')' : '') + '\r\n' +
+                    (mode === 'diff' ? 'Contains only what changed since ' + (payload.since || 'the beginning') + '.\r\n' +
+                        'Import it into the catalog app: existing items are updated, new ones added, deleted ones removed.\r\n'
+                        : 'Contains the whole catalog. Importing it replaces everything.\r\n') +
+                    'Photos are separate JPEG files in photos/, referenced from catalog.json.\r\n') });
+
+                const dateStr = exportedAt.slice(0, 10);
+                /* seconds included: two exports in the same minute used to end up
+                   as "name.zip" and "name (1).zip" and were easy to mix up */
+                const stamp = exportedAt.slice(11, 19).replace(/:/g, '');
+                const fileName = (mode === 'diff' ? 'souvenirs_changes_' : 'souvenirs_catalog_') + dateStr + '_' + stamp + '.zip';
+                const blob = await zipBuild(files);
+                return { blob: blob, fileName: fileName, count: payloadItems.length,
+                         deleted: deletedCount, exportedAt: exportedAt, mode: mode };
             }
 
             async function runExport(mode) {
                 try {
                     exportOverlay.classList.add('hidden');
-                    const all = await getAllItems();
-                    const selected = (mode === 'diff')
-                        ? all.filter(changedSinceSync)
-                        : all.filter(it => !it.deleted);
-                    if (mode === 'diff' && selected.length === 0) {
-                        alert(t('diffEmptyAlert').replace('{date}', syncDateText()));
+                    exportBtn.disabled = true;
+                    const built = await buildArchive(mode);
+                    if (!built) {
+                        notify(mode === 'diff'
+                            ? t('diffEmptyAlert').replace('{date}', syncDateText())
+                            : t('exportEmpty'), 'err');
                         return;
                     }
-                    if (selected.length === 0) { alert(t('exportEmpty')); return; }
-
-                    exportBtn.disabled = true;
-                    const exportedAt = new Date().toISOString();
-                    const enc = new TextEncoder();
-                    const files = [];
-                    let deletedCount = 0;
-                    const payloadItems = selected.map(item => {
-                        if (item.deleted) { deletedCount++; return Object.assign({}, item, { photos: [] }); }
-                        const refs = [];
-                        (item.photos || []).forEach((photo, i) => {
-                            const bin = dataUrlToBytes(photo);
-                            if (!bin) return;
-                            const fname = 'photos/' + item.id + '_' + (i + 1) + '.' + bin.ext;
-                            files.push({ name: fname, data: bin.bytes, compress: false });
-                            refs.push(fname);
-                        });
-                        return Object.assign({}, item, { photos: refs });
-                    });
-                    const payload = {
-                        version: 3,
-                        app: 'SouvenirsCatalog',
-                        exportType: (mode === 'diff') ? 'diff' : 'full',
-                        since: (mode === 'diff') ? (lastSyncAt || null) : null,
-                        exportedAt: exportedAt,
-                        currency: 'GMD',
-                        exchangeRate,
-                        rateBasis: 'GMD_per_USD',
-                        rateSource,
-                        counts: { items: payloadItems.length, deleted: deletedCount },
-                        items: payloadItems
-                    };
-                    files.unshift({ name: 'catalog.json', data: enc.encode(JSON.stringify(payload)) });
-                    files.push({ name: 'README.txt', data: enc.encode(
-                        'Souvenirs Catalog ' + (mode === 'diff' ? 'CHANGES' : 'FULL BACKUP') + '\r\n' +
-                        'Records: ' + payloadItems.length + (deletedCount ? ' (deletions: ' + deletedCount + ')' : '') + '\r\n' +
-                        (mode === 'diff' ? 'Contains only what changed since ' + (payload.since || 'the beginning') + '.\r\n' +
-                            'Import it into the catalog app: existing items are updated, new ones added, deleted ones removed.\r\n'
-                            : 'Contains the whole catalog. Importing it replaces everything.\r\n') +
-                        'Photos are separate JPEG files in photos/, referenced from catalog.json.\r\n') });
-
-                    const dateStr = exportedAt.slice(0, 10);
-                    const stamp = new Date().toTimeString().slice(0, 5).replace(':', '');
-                    const fileName = (mode === 'diff' ? 'souvenirs_changes_' : 'souvenirs_catalog_') + dateStr + '_' + stamp + '.zip';
-                    const blob = await zipBuild(files);
-                    downloadBlob(blob, fileName);
+                    lastExportBlob = built.blob;
+                    lastExportName = built.fileName;
+                    downloadBlob(built.blob, built.fileName);
                     try {
-                        await rememberExport(fileName, blob, payloadItems.length, mode, deletedCount);
+                        await rememberExport(built.fileName, built.blob, built.count, mode, built.deleted);
                         await renderExportHistory();
                     } catch (e) { console.warn('export history', e); }
 
-                    alert(t('exportDone').replace('{name}', fileName).replace('{size}', formatSize(blob.size)));
+                    notify(t('exportDone').replace('{name}', built.fileName)
+                        .replace('{size}', formatSize(built.blob.size)) +
+                        '\n' + t('sumTotal') + ': ' + built.count, 'ok');
 
                     if (mode === 'diff') {
-                        setSyncPoint(exportedAt);
+                        setSyncPoint(built.exportedAt);
                         await migrateAndClean();
-                        alert(t('syncSetTo').replace('{date}', formatDate(exportedAt)));
                     } else if (confirm(t('syncMarkAsk'))) {
-                        setSyncPoint(exportedAt);
+                        setSyncPoint(built.exportedAt);
                         await migrateAndClean();
-                        alert(t('syncSetTo').replace('{date}', formatDate(exportedAt)));
                     }
                 } catch (err) {
-                    alert(t('exportError') + err.message);
+                    notify(t('exportError') + err.message, 'err');
                 } finally {
                     exportBtn.disabled = false;
                 }
@@ -2980,11 +3661,13 @@
                 if (e.target === exportOverlay) exportOverlay.classList.add('hidden');
             });
             exportFullBtn.addEventListener('click', () => runExport('full'));
-            exportDiffBtn.addEventListener('click', () => runExport('diff'));
-            syncResetBtn.addEventListener('click', () => {
+            exportSendBtn.addEventListener('click', sendToFileIo);
+            /* kept working in code, just no longer offered in the menu */
+            if (exportDiffBtn) exportDiffBtn.addEventListener('click', () => runExport('diff'));
+            if (syncResetBtn) syncResetBtn.addEventListener('click', () => {
                 if (!confirm(t('syncResetAsk'))) return;
                 clearSyncPoint();
-                alert(t('syncResetDone'));
+                notify(t('syncResetDone'), 'ok');
                 openExportChoice();
             });
 
@@ -2999,10 +3682,76 @@
                 URL.revokeObjectURL(url);
             }
 
-            importBtn.addEventListener('click', () => importFile.click());
+            function isArchiveLink(v) {
+                return /^https?:\/\/\S+$/i.test((v || '').trim()) && /litter/i.test(v);
+            }
+            function updateLinkTick() {
+                if (!linkOk) return;
+                linkOk.classList.toggle('hidden', !isArchiveLink(importLinkInput.value));
+            }
+            /* the field stays empty unless the clipboard really holds a Litterbox link */
+            async function prefillFromClipboard() {
+                importLinkInput.value = '';
+                updateLinkTick();
+                try {
+                    if (!navigator.clipboard || !navigator.clipboard.readText) return;
+                    const txt = (await navigator.clipboard.readText() || '').trim();
+                    if (isArchiveLink(txt)) {
+                        importLinkInput.value = txt;
+                        updateLinkTick();
+                    }
+                } catch (e) { /* no permission - leave it empty */ }
+            }
+
+            function openImportChoice() {
+                document.getElementById('import-choice-title').textContent = t('importTitle');
+                document.getElementById('imp-disk-title').textContent = t('importFromDisk');
+                document.getElementById('imp-disk-desc').textContent = t('importFromDiskDesc');
+                document.getElementById('imp-link-title').textContent = t('importFromLink');
+                document.getElementById('imp-link-desc').textContent = t('importFromLinkDesc');
+                importLinkGo.textContent = t('importLinkGo');
+                importOverlay.classList.remove('hidden');
+                prefillFromClipboard();
+            }
+            importBtn.addEventListener('click', openImportChoice);
+            importChoiceClose.addEventListener('click', () => importOverlay.classList.add('hidden'));
+            importOverlay.addEventListener('click', (e) => {
+                if (e.target === importOverlay) importOverlay.classList.add('hidden');
+            });
+            importDiskBtn.addEventListener('click', () => { importOverlay.classList.add('hidden'); importFile.click(); });
+            importLinkInput.addEventListener('input', updateLinkTick);
+            importLinkInput.addEventListener('paste', () => setTimeout(updateLinkTick, 0));
+            importLinkGo.addEventListener('click', async () => {
+                const url = (importLinkInput.value || '').trim();
+                if (!url) { notify(t('importLinkEmpty'), 'err'); return; }
+                importLinkGo.disabled = true;
+                const label = importLinkGo.textContent;
+                importLinkGo.textContent = t('sending');
+                try {
+                    const res = await fetch(url, { cache: 'no-store' });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const buf = await res.arrayBuffer();
+                    if (!buf || buf.byteLength < 32) throw new Error('empty file');
+                    importOverlay.classList.add('hidden');
+                    const looksZip = new Uint8Array(buf, 0, 2)[0] === 0x50 && new Uint8Array(buf, 0, 2)[1] === 0x4B;
+                    const blob = new Blob([buf], { type: looksZip ? 'application/zip' : 'application/json' });
+                    const fname = looksZip ? 'from_link.zip' : 'from_link.json';
+                    await handleImportFile(new File([blob], fname, { type: blob.type }));
+                    dropLink();
+                } catch (err) {
+                    notify(t('importLinkBad').replace('{err}', (err && (err.message || err.name)) || '?'), 'err');
+                } finally {
+                    importLinkGo.disabled = false;
+                    importLinkGo.textContent = label;
+                }
+            });
             importFile.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
+                await handleImportFile(file);
+            });
+
+            async function handleImportFile(file) {
                 try {
                     let items = null;
                     let zipFiles = null;
@@ -3041,12 +3790,12 @@
                         const warn = t('importDiffWarn')
                             .replace('{current}', liveCount)
                             .replace('{incoming}', items.length);
-                        if (!confirm(warn)) { alert(t('importCancelled')); return; }
+                        if (!confirm(warn)) { notify(t('importCancelled'), 'info'); return; }
                     } else {
                         const warn = t('importReplaceWarn')
                             .replace('{current}', liveCount)
                             .replace('{incoming}', items.length);
-                        if (!confirm(warn)) { alert(t('importCancelled')); return; }
+                        if (!confirm(warn)) { notify(t('importCancelled'), 'info'); return; }
                         await clearAllItems();
                         allItems = [];
                     }
@@ -3109,7 +3858,7 @@
                         deleted: removed, skipped: skipped, mode: isDiff ? 'diff' : 'full' };
                     try { await rememberImport(file.name, file.size, summary); await renderExportHistory(); }
                     catch (e) { console.warn('import history', e); }
-                    alert((isDiff ? t('importDiffDone') : t('importDoneTitle')) + '\n\n' +
+                    notifyImport((isDiff ? t('importDiffDone') : t('importDoneTitle')) + '\n' +
                         t('sumTotal') + ': ' + count + '\n' +
                         t('sumAdded') + ': ' + added + '\n' +
                         t('sumUpdated') + ': ' + updated + '\n' +
@@ -3117,13 +3866,17 @@
                         (skipped ? t('sumSkipped') + ': ' + skipped + '\n' : '') +
                         t('sumNoPhoto') + ': ' + noPhoto);
                 } catch (err) {
-                    alert(t('importError') + err.message);
+                    notify(t('importError') + err.message, 'err');
                 } finally {
                     importFile.value = '';
                 }
-            });
+            }
 
-            searchInput.addEventListener('input', () => { currentPage = 1; applySearch(); });
+            searchInput.addEventListener('input', () => { currentPage = 1; rememberPage(); applySearch(); });
+            toTopBtn.addEventListener('click', scrollToTop);
+            window.addEventListener('scroll', () => {
+                toTopBtn.classList.toggle('on', window.pageYOffset > 400);
+            }, { passive: true });
             addBtn.addEventListener('click', openAddForm);
             modalClose.addEventListener('click', closeForm);
             modalOverlay.addEventListener('click', (e) => {
@@ -3133,6 +3886,7 @@
                 const idx = VIEW_ORDER.indexOf(currentView);
                 currentView = VIEW_ORDER[(idx + 1) % VIEW_ORDER.length];
                 currentPage = 1;
+                rememberPage();
                 localStorage.setItem('souvenirs_view', currentView);
                 updateViewButton();
                 applySearch();
@@ -3162,7 +3916,7 @@
                     await renderExportHistory();
                 } catch (err) {
                     console.error('Init error:', err);
-                    alert(t('initError') + err.message);
+                    notify(t('initError') + err.message, 'err');
                 }
             }
             document.addEventListener('DOMContentLoaded', init);
