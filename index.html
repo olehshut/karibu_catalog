@@ -608,6 +608,35 @@
             cursor: pointer;
         }
 
+        /* --- export choice --- */
+        .exp-choice {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            width: 100%;
+            text-align: left;
+            padding: 14px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fff;
+            cursor: pointer;
+            transition: border-color var(--transition), background var(--transition);
+        }
+        .exp-choice:hover { border-color: var(--accent); background: #f7fbff; }
+        .exp-choice:disabled { opacity: 0.5; cursor: default; }
+        .exp-choice .exp-ic { font-size: 1.5rem; line-height: 1.2; }
+        .exp-choice .exp-txt { flex: 1; min-width: 0; }
+        .exp-choice b { display: block; font-size: 1rem; margin-bottom: 3px; }
+        .exp-choice small { color: var(--text-light); font-size: 0.85rem; line-height: 1.35; display: block; }
+        .sync-line {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
         /* --- pagination --- */
         .pager {
             display: none;
@@ -846,6 +875,23 @@
     </div>
 
     <!-- Settings modal -->
+    <div id="export-overlay" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 520px;">
+            <button class="modal-close" id="export-choice-close">×</button>
+            <h2 id="export-choice-title" style="margin-bottom: 14px;">What do you want to export?</h2>
+            <button type="button" class="exp-choice" id="export-full-btn">
+                <span class="exp-ic">📦</span>
+                <span class="exp-txt"><b id="exp-full-title">Full catalog</b><small id="exp-full-desc"></small></span>
+            </button>
+            <button type="button" class="exp-choice" id="export-diff-btn">
+                <span class="exp-ic">🔄</span>
+                <span class="exp-txt"><b id="exp-diff-title">Only the changes</b><small id="exp-diff-desc"></small></span>
+            </button>
+            <div class="sync-line" id="sync-line"></div>
+            <button type="button" class="btn" id="sync-reset-btn" style="width:100%; justify-content:center; margin-top:8px;">Reset the sync point</button>
+        </div>
+    </div>
+
     <div id="settings-overlay" class="modal-overlay hidden">
         <div class="modal-content">
             <button class="modal-close" id="settings-close">×</button>
@@ -1014,7 +1060,29 @@
                     checkOpen: 'Open',
                     photoSave: '\u2b07 Save photo',
                     photoSaveError: 'Could not save the photo.',
-                    dateLabel: 'Date'
+                    dateLabel: 'Date',
+                    exportChoiceTitle: 'What do you want to export?',
+                    expFull: 'Full catalog',
+                    expFullDesc: '{n} item(s) with all photos. Use it for the first hand-over or as a backup.',
+                    expDiff: 'Only the changes',
+                    expDiffDesc: '{n} change(s) since {date}: new, edited and deleted items only. A much smaller file for the developer.',
+                    expDiffNothing: 'nothing changed yet',
+                    syncNever: 'the very beginning',
+                    syncPoint: 'Sync point: {date}',
+                    syncPointNever: 'Sync point is not set yet \u2014 the first \"changes\" export will contain the whole catalog.',
+                    syncReset: 'Reset the sync point',
+                    syncResetAsk: 'Reset the sync point? The next \"changes\" export will again contain every item in the catalog.',
+                    syncResetDone: 'Sync point cleared.',
+                    syncMarkAsk: 'Mark this full export as handed over?\n\nIf you answer Yes, the next \"changes\" export will only contain what you edit from now on.',
+                    syncSetTo: 'Sync point moved to {date}.',
+                    diffEmptyAlert: 'Nothing has changed since the last sync ({date}), so there is nothing to send.',
+                    modeFull: 'full catalog',
+                    modeDiff: 'changes only',
+                    sumMode: 'Type',
+                    sumDeleted: 'Deleted',
+                    sumSkipped: 'Deletions ignored (not in catalog)',
+                    importDiffWarn: 'This file contains CHANGES ONLY, not a whole catalog.\n\nIn the file: {incoming} change(s).\nIn your catalog now: {current} item(s).\n\nThe catalog will NOT be wiped: matching items get updated, new ones are added, items deleted by the sender are removed here too.\n\nApply these changes?',
+                    importDiffDone: 'Changes applied'
                 },
                 ru: {
                     title: '📦 Сувениры',
@@ -1130,7 +1198,29 @@
                     checkOpen: 'Открыть',
                     photoSave: '\u2b07 Сохранить фото',
                     photoSaveError: 'Не удалось сохранить фото.',
-                    dateLabel: 'Дата'
+                    dateLabel: 'Дата',
+                    exportChoiceTitle: 'Что выгружаем?',
+                    expFull: 'Весь каталог',
+                    expFullDesc: '{n} тов. со всеми фото. Для первой передачи или как резервная копия.',
+                    expDiff: 'Только изменения',
+                    expDiffDesc: '{n} изм. с {date}: только новые, отредактированные и удалённые позиции. Файл для программиста получается намного меньше.',
+                    expDiffNothing: 'изменений пока нет',
+                    syncNever: 'самого начала',
+                    syncPoint: 'Точка синхронизации: {date}',
+                    syncPointNever: 'Точка синхронизации не задана — первый экспорт изменений выгрузит весь каталог.',
+                    syncReset: 'Сбросить точку синхронизации',
+                    syncResetAsk: 'Сбросить точку синхронизации? Следующий экспорт изменений снова выгрузит все товары каталога.',
+                    syncResetDone: 'Точка синхронизации сброшена.',
+                    syncMarkAsk: 'Отметить эту полную выгрузку как переданную?\n\nЕсли ответить «ОК», следующий экспорт изменений будет содержать только то, что вы отредактируете после этого момента.',
+                    syncSetTo: 'Точка синхронизации перенесена на {date}.',
+                    diffEmptyAlert: 'С момента последней синхронизации ({date}) ничего не изменилось — отправлять нечего.',
+                    modeFull: 'весь каталог',
+                    modeDiff: 'только изменения',
+                    sumMode: 'Тип',
+                    sumDeleted: 'Удалено',
+                    sumSkipped: 'Удаления пропущены (нет в каталоге)',
+                    importDiffWarn: 'В этом файле ТОЛЬКО ИЗМЕНЕНИЯ, а не весь каталог.\n\nВ файле: {incoming} изм.\nСейчас в каталоге: {current} тов.\n\nКаталог НЕ будет очищен: совпавшие товары обновятся, новые добавятся, удалённые отправителем — удалятся и здесь.\n\nПрименить изменения?',
+                    importDiffDone: 'Изменения применены'
                 }
             };
 
@@ -1241,6 +1331,7 @@
                 });
                 applySearch();
                 updateRateUI();
+                renderSyncLine();
             }
 
             function applyTranslations() {
@@ -1438,6 +1529,68 @@
             }
 
             let allItems = [];
+
+            /* ---------- diff sync ----------
+               Every item carries updatedAt. Deleting keeps a tiny tombstone
+               ({deleted:true}) so the change can be handed over as well.
+               lastSyncAt marks what the developer has already received. */
+            const SYNC_KEY = 'souvenirs_last_sync';
+            let lastSyncAt = null;
+
+            function loadSyncPoint() {
+                try { lastSyncAt = localStorage.getItem(SYNC_KEY) || null; } catch (e) { lastSyncAt = null; }
+            }
+            function setSyncPoint(iso) {
+                lastSyncAt = iso;
+                try { localStorage.setItem(SYNC_KEY, iso); } catch (e) {}
+                renderSyncLine();
+            }
+            function clearSyncPoint() {
+                lastSyncAt = null;
+                try { localStorage.removeItem(SYNC_KEY); } catch (e) {}
+                renderSyncLine();
+            }
+            function itemStamp(item) {
+                return item.updatedAt || item.dateAdded || '';
+            }
+            function changedSinceSync(item) {
+                if (!lastSyncAt) return true;
+                return itemStamp(item) > lastSyncAt;   /* ISO strings compare correctly */
+            }
+            function touchItem(item) {
+                item.updatedAt = new Date().toISOString();
+                return item;
+            }
+            function makeTombstone(item) {
+                return {
+                    id: item.id,
+                    name: item.name || '',
+                    deleted: true,
+                    price: null,
+                    weight: '',
+                    materials: '',
+                    description: '',
+                    dimensions: { length: 0, width: 0, height: 0 },
+                    photos: [],
+                    dateAdded: item.dateAdded || new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+            }
+            /* old records get a stamp once; tombstones already handed over are purged */
+            async function migrateAndClean() {
+                let items = [];
+                try { items = await getAllItems(); } catch (e) { return; }
+                for (const it of items) {
+                    if (it.deleted && lastSyncAt && itemStamp(it) <= lastSyncAt) {
+                        await deleteItemFromDB(it.id);
+                        continue;
+                    }
+                    if (!it.updatedAt) {
+                        it.updatedAt = it.dateAdded || new Date().toISOString();
+                        await putItem(it);
+                    }
+                }
+            }
             let tempPhotos = [];
             let editingItem = null;
             let lbPhotos = [];
@@ -1488,6 +1641,11 @@
             const saveState = document.getElementById('save-state');
             const exportListEl = document.getElementById('export-list');
             const checkDbBtn = document.getElementById('check-db-btn');
+            const exportOverlay = document.getElementById('export-overlay');
+            const exportChoiceClose = document.getElementById('export-choice-close');
+            const exportFullBtn = document.getElementById('export-full-btn');
+            const exportDiffBtn = document.getElementById('export-diff-btn');
+            const syncResetBtn = document.getElementById('sync-reset-btn');
             const checkResultEl = document.getElementById('check-result');
             const pagerTop = document.getElementById('pager-top');
             const pagerBottom = document.getElementById('pager-bottom');
@@ -1592,7 +1750,7 @@
                     e.stopPropagation();
                     if (confirm(t('confirmDelete'))) {
                         try {
-                            await deleteItemFromDB(item.id);
+                            await putItem(makeTombstone(item));   /* keeps the deletion syncable */
                             await refreshCatalog();
                         } catch (err) { alert(t('deleteError') + err.message); }
                     }
@@ -1757,7 +1915,7 @@
 
             function refreshCatalog() {
                 return getAllItems().then(items => {
-                    allItems = items;
+                    allItems = items.filter(it => !it.deleted);
                     applySearch();
                 }).catch(err => {
                     console.error('Catalog load error:', err);
@@ -1833,6 +1991,8 @@
                     materials: fMaterials.value.trim(),
                     description: fDescription.value.trim(),
                     dateAdded: (editingItem && editingItem.dateAdded) ? editingItem.dateAdded : new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    deleted: false,
                     photos: tempPhotos.slice()
                 });
             }
@@ -2545,9 +2705,10 @@
                 });
             }
             const IMPORT_KEEP = 5;
-            async function rememberExport(name, blob, itemCount) {
+            async function rememberExport(name, blob, itemCount, mode, deletedCount) {
                 await putExport({ id: generateId(), kind: 'export', name: name, size: blob.size,
-                    date: new Date().toISOString(), blob: blob, summary: { total: itemCount } });
+                    date: new Date().toISOString(), blob: blob,
+                    summary: { total: itemCount, mode: mode || 'full', deleted: deletedCount || 0 } });
                 await trimHistory();
             }
             async function rememberImport(name, size, summary) {
@@ -2600,13 +2761,18 @@
                 const sum = rec.summary || {};
                 if (rec.kind === 'import') {
                     rows.push([t('sumFile'), rec.name]);
+                    if (sum.mode) rows.push([t('sumMode'), t(sum.mode === 'diff' ? 'modeDiff' : 'modeFull')]);
                     if (sum.total != null) rows.push([t('sumTotal'), sum.total]);
                     if (sum.added != null) rows.push([t('sumAdded'), sum.added]);
                     if (sum.updated != null) rows.push([t('sumUpdated'), sum.updated]);
+                    if (sum.deleted) rows.push([t('sumDeleted'), sum.deleted]);
+                    if (sum.skipped) rows.push([t('sumSkipped'), sum.skipped]);
                     if (sum.noPhoto != null) rows.push([t('sumNoPhoto'), sum.noPhoto]);
                 } else {
                     rows.push([t('sumFile'), rec.name]);
+                    rows.push([t('sumMode'), t(sum.mode === 'diff' ? 'modeDiff' : 'modeFull')]);
                     if (sum.total != null) rows.push([t('sumTotal'), sum.total]);
+                    if (sum.deleted) rows.push([t('sumDeleted'), sum.deleted]);
                 }
                 rows.push([t('dateLabel'), formatDate(rec.date)]);
                 return rows;
@@ -2699,14 +2865,55 @@
                 exportListEl.appendChild(hint);
             }
 
-            exportBtn.addEventListener('click', async () => {
+            function syncDateText() {
+                return lastSyncAt ? formatDate(lastSyncAt) : t('syncNever');
+            }
+            function renderSyncLine() {
+                const line = document.getElementById('sync-line');
+                if (!line) return;
+                line.textContent = lastSyncAt
+                    ? t('syncPoint').replace('{date}', formatDate(lastSyncAt))
+                    : t('syncPointNever');
+            }
+            async function openExportChoice() {
+                let items = [];
+                try { items = await getAllItems(); } catch (e) { items = []; }
+                const live = items.filter(it => !it.deleted);
+                const changes = items.filter(changedSinceSync);
+                document.getElementById('export-choice-title').textContent = t('exportChoiceTitle');
+                document.getElementById('exp-full-title').textContent = t('expFull');
+                document.getElementById('exp-full-desc').textContent =
+                    t('expFullDesc').replace('{n}', live.length);
+                document.getElementById('exp-diff-title').textContent = t('expDiff');
+                document.getElementById('exp-diff-desc').textContent =
+                    t('expDiffDesc').replace('{n}', changes.length).replace('{date}', syncDateText());
+                document.getElementById('export-full-btn').disabled = live.length === 0;
+                document.getElementById('export-diff-btn').disabled = changes.length === 0;
+                document.getElementById('sync-reset-btn').textContent = t('syncReset');
+                renderSyncLine();
+                exportOverlay.classList.remove('hidden');
+            }
+
+            async function runExport(mode) {
                 try {
-                    const items = await getAllItems();
-                    if (items.length === 0) { alert(t('exportEmpty')); return; }
+                    exportOverlay.classList.add('hidden');
+                    const all = await getAllItems();
+                    const selected = (mode === 'diff')
+                        ? all.filter(changedSinceSync)
+                        : all.filter(it => !it.deleted);
+                    if (mode === 'diff' && selected.length === 0) {
+                        alert(t('diffEmptyAlert').replace('{date}', syncDateText()));
+                        return;
+                    }
+                    if (selected.length === 0) { alert(t('exportEmpty')); return; }
+
                     exportBtn.disabled = true;
+                    const exportedAt = new Date().toISOString();
                     const enc = new TextEncoder();
                     const files = [];
-                    const payloadItems = items.map(item => {
+                    let deletedCount = 0;
+                    const payloadItems = selected.map(item => {
+                        if (item.deleted) { deletedCount++; return Object.assign({}, item, { photos: [] }); }
                         const refs = [];
                         (item.photos || []).forEach((photo, i) => {
                             const bin = dataUrlToBytes(photo);
@@ -2718,33 +2925,67 @@
                         return Object.assign({}, item, { photos: refs });
                     });
                     const payload = {
-                        version: 2,
+                        version: 3,
                         app: 'SouvenirsCatalog',
-                        exportedAt: new Date().toISOString(),
+                        exportType: (mode === 'diff') ? 'diff' : 'full',
+                        since: (mode === 'diff') ? (lastSyncAt || null) : null,
+                        exportedAt: exportedAt,
                         currency: 'GMD',
                         exchangeRate,
                         rateBasis: 'GMD_per_USD',
                         rateSource,
+                        counts: { items: payloadItems.length, deleted: deletedCount },
                         items: payloadItems
                     };
                     files.unshift({ name: 'catalog.json', data: enc.encode(JSON.stringify(payload)) });
                     files.push({ name: 'README.txt', data: enc.encode(
-                        'Souvenirs Catalog backup\r\n' +
-                        'Items: ' + items.length + '\r\n' +
-                        'Photos are stored as separate JPEG files in photos/ and are referenced from catalog.json.\r\n' +
-                        'Open the HTML app and use Import to restore.\r\n') });
-                    const dateStr = new Date().toISOString().slice(0, 10);
+                        'Souvenirs Catalog ' + (mode === 'diff' ? 'CHANGES' : 'FULL BACKUP') + '\r\n' +
+                        'Records: ' + payloadItems.length + (deletedCount ? ' (deletions: ' + deletedCount + ')' : '') + '\r\n' +
+                        (mode === 'diff' ? 'Contains only what changed since ' + (payload.since || 'the beginning') + '.\r\n' +
+                            'Import it into the catalog app: existing items are updated, new ones added, deleted ones removed.\r\n'
+                            : 'Contains the whole catalog. Importing it replaces everything.\r\n') +
+                        'Photos are separate JPEG files in photos/, referenced from catalog.json.\r\n') });
+
+                    const dateStr = exportedAt.slice(0, 10);
                     const stamp = new Date().toTimeString().slice(0, 5).replace(':', '');
-                    const fileName = 'souvenirs_catalog_' + dateStr + '_' + stamp + '.zip';
+                    const fileName = (mode === 'diff' ? 'souvenirs_changes_' : 'souvenirs_catalog_') + dateStr + '_' + stamp + '.zip';
                     const blob = await zipBuild(files);
                     downloadBlob(blob, fileName);
-                    try { await rememberExport(fileName, blob, items.length); await renderExportHistory(); } catch (e) { console.warn('export history', e); }
+                    try {
+                        await rememberExport(fileName, blob, payloadItems.length, mode, deletedCount);
+                        await renderExportHistory();
+                    } catch (e) { console.warn('export history', e); }
+
                     alert(t('exportDone').replace('{name}', fileName).replace('{size}', formatSize(blob.size)));
+
+                    if (mode === 'diff') {
+                        setSyncPoint(exportedAt);
+                        await migrateAndClean();
+                        alert(t('syncSetTo').replace('{date}', formatDate(exportedAt)));
+                    } else if (confirm(t('syncMarkAsk'))) {
+                        setSyncPoint(exportedAt);
+                        await migrateAndClean();
+                        alert(t('syncSetTo').replace('{date}', formatDate(exportedAt)));
+                    }
                 } catch (err) {
                     alert(t('exportError') + err.message);
                 } finally {
                     exportBtn.disabled = false;
                 }
+            }
+
+            exportBtn.addEventListener('click', openExportChoice);
+            exportChoiceClose.addEventListener('click', () => exportOverlay.classList.add('hidden'));
+            exportOverlay.addEventListener('click', (e) => {
+                if (e.target === exportOverlay) exportOverlay.classList.add('hidden');
+            });
+            exportFullBtn.addEventListener('click', () => runExport('full'));
+            exportDiffBtn.addEventListener('click', () => runExport('diff'));
+            syncResetBtn.addEventListener('click', () => {
+                if (!confirm(t('syncResetAsk'))) return;
+                clearSyncPoint();
+                alert(t('syncResetDone'));
+                openExportChoice();
             });
 
             function downloadBlob(blob, filename) {
@@ -2765,6 +3006,7 @@
                 try {
                     let items = null;
                     let zipFiles = null;
+                    let isDiff = false;
                     const name = (file.name || '').toLowerCase();
                     if (name.endsWith('.zip') || file.type.includes('zip')) {
                         zipFiles = await zipRead(await readFileAsArrayBuffer(file));
@@ -2780,25 +3022,36 @@
                         if (!key) throw new Error('catalog.json not found in archive');
                         const data = JSON.parse(new TextDecoder().decode(zipFiles.get(key)));
                         items = Array.isArray(data) ? data : (data.items || null);
+                        isDiff = !!(data && data.exportType === 'diff');
                     } else {
                         const text = await readFileAsText(file);
                         const data = JSON.parse(text);
                         items = Array.isArray(data) ? data : (data.items || null);
+                        isDiff = !!(data && data.exportType === 'diff');
                     }
                     if (!Array.isArray(items)) throw new Error(t('importNotValid'));
 
-                    /* import replaces the whole catalog - ask first */
                     const existing = await getAllItems();
                     const existingIds = {};
-                    existing.forEach(it => { existingIds[it.id] = true; });
-                    const warn = t('importReplaceWarn')
-                        .replace('{current}', existing.length)
-                        .replace('{incoming}', items.length);
-                    if (!confirm(warn)) { alert(t('importCancelled')); return; }
-                    await clearAllItems();
-                    allItems = [];
+                    existing.forEach(it => { if (!it.deleted) existingIds[it.id] = true; });
+                    const liveCount = existing.filter(it => !it.deleted).length;
 
-                    let count = 0, added = 0, updated = 0, noPhoto = 0;
+                    if (isDiff) {
+                        /* changes only: never wipe anything */
+                        const warn = t('importDiffWarn')
+                            .replace('{current}', liveCount)
+                            .replace('{incoming}', items.length);
+                        if (!confirm(warn)) { alert(t('importCancelled')); return; }
+                    } else {
+                        const warn = t('importReplaceWarn')
+                            .replace('{current}', liveCount)
+                            .replace('{incoming}', items.length);
+                        if (!confirm(warn)) { alert(t('importCancelled')); return; }
+                        await clearAllItems();
+                        allItems = [];
+                    }
+
+                    let count = 0, added = 0, updated = 0, noPhoto = 0, removed = 0, skipped = 0;
                     for (const raw of items) {
                         if (!raw || typeof raw !== 'object') continue;
                         /* unknown fields from other versions are preserved as-is */
@@ -2833,19 +3086,35 @@
                         if (typeof item.materials !== 'string') item.materials = '';
                         if (typeof item.description !== 'string') item.description = '';
                         if (!item.dateAdded) item.dateAdded = new Date().toISOString();
+                        if (!item.updatedAt) item.updatedAt = item.dateAdded;
+
+                        if (item.deleted) {
+                            /* the sender removed this item */
+                            if (existingIds[item.id]) {
+                                await deleteItemFromDB(item.id);
+                                removed++;
+                            } else {
+                                skipped++;
+                            }
+                            count++;
+                            continue;
+                        }
                         if (existingIds[item.id]) updated++; else added++;
                         if (!item.photos.length) noPhoto++;
                         await putItem(item);
                         count++;
                     }
                     await refreshCatalog();
-                    const summary = { total: count, added: added, updated: updated, noPhoto: noPhoto };
+                    const summary = { total: count, added: added, updated: updated, noPhoto: noPhoto,
+                        deleted: removed, skipped: skipped, mode: isDiff ? 'diff' : 'full' };
                     try { await rememberImport(file.name, file.size, summary); await renderExportHistory(); }
                     catch (e) { console.warn('import history', e); }
-                    alert(t('importDoneTitle') + '\n\n' +
+                    alert((isDiff ? t('importDiffDone') : t('importDoneTitle')) + '\n\n' +
                         t('sumTotal') + ': ' + count + '\n' +
                         t('sumAdded') + ': ' + added + '\n' +
                         t('sumUpdated') + ': ' + updated + '\n' +
+                        (isDiff ? t('sumDeleted') + ': ' + removed + '\n' : '') +
+                        (skipped ? t('sumSkipped') + ': ' + skipped + '\n' : '') +
                         t('sumNoPhoto') + ': ' + noPhoto);
                 } catch (err) {
                     alert(t('importError') + err.message);
@@ -2886,6 +3155,9 @@
                     setLanguage(currentLang);
                     updateRateUI();
                     updateViewButton();
+                    loadSyncPoint();
+                    await migrateAndClean();
+                    renderSyncLine();
                     await refreshCatalog();
                     await renderExportHistory();
                 } catch (err) {
