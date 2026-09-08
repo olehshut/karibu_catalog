@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rockfall — клон Boulder Dash</title>
+<style>
+  html,body{margin:0;padding:0;background:#000;color:#d8d8d8;font-family:"Courier New",monospace;height:100%;overflow:hidden}
+  #wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+  #hud{width:min(96vw,880px);display:flex;justify-content:space-between;font-size:15px;font-weight:bold;letter-spacing:1px;color:#f0d000;
+       background:#101010;border:2px solid #303030;padding:6px 10px;box-sizing:border-box}
+  #hud span{white-space:nowrap}
+  #hud b{color:#fff;font-weight:bold}
+  #hud i{font-style:normal}
+  .langs{display:flex;gap:6px;margin:0 0 12px}
+  .lang{border:2px solid #303030;background:#141414;color:#808080;font:bold 12px "Courier New",monospace;
+        padding:4px 9px;cursor:pointer}
+  .lang.on{border-color:#f0d000;color:#f0d000}
+  .play{border:2px solid #f0d000;background:#141414;color:#f0d000;font:bold 18px "Courier New",monospace;
+        padding:10px 26px;cursor:pointer;letter-spacing:3px}
+  .play:hover{background:#f0d000;color:#000}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#000;border:2px solid #303030;
+         width:min(96vw,880px);height:auto;display:block}
+  #foot{width:min(96vw,880px);font-size:12px;color:#707070;display:flex;justify-content:space-between}
+  #pad{display:none}
+  body.touch #pad{display:flex;align-items:center;justify-content:space-between;
+    width:min(100vw,880px);padding:10px 14px;box-sizing:border-box;gap:14px}
+  .dpad{display:grid;grid-template-columns:repeat(3,60px);grid-template-rows:repeat(3,60px);gap:5px}
+  .dpad .ku{grid-area:1/2} .dpad .kl{grid-area:2/1} .dpad .kr{grid-area:2/3} .dpad .kd{grid-area:3/2}
+  .acts{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+  .acts-row{display:flex;gap:8px}
+  .k{border:2px solid #404040;background:#141414;color:#d8d8d8;
+     font:bold 20px "Courier New",monospace;border-radius:6px;
+     touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
+     width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .kgrab{width:104px;height:76px;font-size:15px;letter-spacing:1px;color:#f0d000;border-color:#6a5a10}
+  .ksm{width:48px;height:44px;font-size:12px;color:#909090}
+  .k.down{background:#f0d000;color:#000;border-color:#f0d000}
+  body.touch{touch-action:manipulation}
+  body.touch canvas{width:auto;height:44dvh;max-width:99vw}
+  body.touch #hud{width:min(100vw,880px);font-size:12px}
+  body.touch #foot{display:none}
+  @media (orientation:landscape) and (max-height:560px){
+    body.touch canvas{height:62dvh}
+    body.touch #pad{position:fixed;left:0;right:0;bottom:0;width:100vw;pointer-events:none;padding:6px 10px}
+    body.touch #pad .dpad,body.touch #pad .acts{pointer-events:auto;opacity:.9}
+    .dpad{grid-template-columns:repeat(3,50px);grid-template-rows:repeat(3,50px)}
+    .k{width:50px;height:50px;font-size:17px}
+    .kgrab{width:86px;height:62px;font-size:13px}
+  }
+  .desk-only{display:block}
+  body.touch .desk-only{display:none}
+  #overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.86)}
+  #panel{width:min(92vw,620px);border:2px solid #404040;background:#0a0a0a;padding:22px 26px}
+  #panel h1{margin:0 0 4px;font-size:26px;color:#f0d000;letter-spacing:3px}
+  #panel h2{margin:0 0 16px;font-size:13px;color:#808080;font-weight:normal;letter-spacing:1px}
+  #panel p{margin:8px 0;font-size:14px;line-height:1.5}
+  #panel .keys{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13px;margin:14px 0}
+  #panel .keys i{color:#5c94fc;font-style:normal}
+  #caves{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 4px}
+  .cave-btn{border:2px solid #404040;background:#141414;color:#d8d8d8;font:bold 13px "Courier New",monospace;
+            padding:6px 10px;cursor:pointer}
+  .cave-btn:hover,.cave-btn:focus{border-color:#f0d000;color:#f0d000;outline:none}
+  .cave-btn[disabled]{opacity:.3;cursor:default}
+  .hint{color:#606060;font-size:12px}
+  .cols{display:grid;grid-template-columns:1fr 200px;gap:22px}
+  table.hs{width:100%;border-collapse:collapse;font-size:13px}
+  table.hs td{padding:2px 4px;border-bottom:1px solid #222}
+  table.hs td:nth-child(1){color:#606060;width:18px}
+  table.hs td:nth-child(2){color:#d8d8d8}
+  table.hs td:nth-child(3){color:#f0d000;text-align:right}
+  table.hs td:nth-child(4){color:#5c94fc;text-align:right;width:18px}
+  #nm{background:#000;border:2px solid #404040;color:#f0d000;font:bold 16px "Courier New",monospace;
+      padding:6px 8px;width:160px;letter-spacing:2px;text-transform:uppercase}
+  #nm:focus{border-color:#f0d000;outline:none}
+  .big{color:#f0d000;font-size:20px;letter-spacing:2px;margin:0 0 10px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <span><i id="l-lvl"></i> <b id="h-lvl">1</b></span>
+    <span><i id="l-dia"></i> <b id="h-dia">0/12</b></span>
+    <span><i id="l-time"></i> <b id="h-time">150</b></span>
+    <span><i id="l-score"></i> <b id="h-score">0</b></span>
+    <span><i id="l-lives"></i> <b id="h-lives">10</b></span>
+  </div>
+  <canvas id="cv" width="640" height="384"></canvas>
+  <div id="foot"><span id="f-name"></span><span id="f-keys"></span></div>
+  <div id="pad">
+    <div class="dpad">
+      <button class="k ku" data-k="up">&#9650;</button>
+      <button class="k kl" data-k="left">&#9664;</button>
+      <button class="k kr" data-k="right">&#9654;</button>
+      <button class="k kd" data-k="down">&#9660;</button>
+    </div>
+    <div class="acts">
+      <button class="k kgrab" data-k="grab">GRAB</button>
+      <div class="acts-row">
+        <button class="k ksm" data-k="map">MAP</button>
+        <button class="k ksm" data-k="pause">II</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="overlay"><div id="panel"></div></div>
+
+<script>
+"use strict";
+
+/* ================= размеры ================= */
+const W = 40, H = 22;              // размер каверны в клетках
+const VW = 20, VH = 12;            // видимое окно
+const TS = 32;                     // пиксель на клетке при выводе
+const SS = 16;                     // спрайт рисуется в 16x16 и растягивается x2
+const TICK = 110;                  // мс на один шаг игровой логики
+
+/* ================= элементы ================= */
+const T = {
+  EMPTY:0, DIRT:1, BOULDER:2, DIAMOND:3, BRICK:4, STEEL:5,
+  EXIT:6, EXITOPEN:7, PLAYER:8, FIREFLY:9, BUTTERFLY:10,
+  AMOEBA:11, MAGIC:12, SLIME:13, EXPAND:14, BOOM:15, BIRTH:16, INBOX:17
+};
+const ROUND = { [T.BOULDER]:1, [T.DIAMOND]:1, [T.BRICK]:1 };   // с них скатывается
+const DX = [0,1,0,-1], DY = [-1,0,1,0];                        // 0=вверх 1=вправо 2=вниз 3=влево
+
+/* ================= генератор случайных ================= */
+function rng(seed){
+  let s = seed >>> 0;
+  return function(){
+    s ^= s << 13; s >>>= 0;
+    s ^= s >> 17;
+    s ^= s << 5;  s >>>= 0;
+    return s / 4294967296;
+  };
+}
+
+/* ================= палитры каверн ================= */
+const PALETTES = [
+  {dirt:'#8a4b12',dirtL:'#c07a2a',wall:'#b8433a',wallL:'#e8837a',wallD:'#6a2019',steel:'#7d7d8c',steelL:'#c0c0cc',steelD:'#3c3c48'},
+  {dirt:'#4a5a20',dirtL:'#86a03c',wall:'#3a6ab8',wallL:'#7aa4e8',wallD:'#1c3468',steel:'#7d7d8c',steelL:'#c0c0cc',steelD:'#3c3c48'},
+  {dirt:'#6a3a5a',dirtL:'#a86a94',wall:'#2f8a70',wallL:'#66c8ac',wallD:'#14483a',steel:'#7d7d8c',steelL:'#c0c0cc',steelD:'#3c3c48'},
+  {dirt:'#7a5a18',dirtL:'#c69a32',wall:'#8a3a8a',wallL:'#c878c8',wallD:'#4a1a4a',steel:'#7d7d8c',steelL:'#c0c0cc',steelD:'#3c3c48'},
+  {dirt:'#385868',dirtL:'#6a9ab0',wall:'#a85a20',wallL:'#e09a58',wallD:'#5c2c08',steel:'#7d7d8c',steelL:'#c0c0cc',steelD:'#3c3c48'},
+  {dirt:'#5a3020',dirtL:'#9a5c3c',wall:'#4a4a8a',wallL:'#8a8ad0',wallD:'#22224a',steel:'#7d7d8c',steelL:'#c0c0cc',steelD:'#3c3c48'},
+  {dirt:'#204838',dirtL:'#4a8a68',wall:'#b03050',wallL:'#e87a94',wallD:'#5c1024',steel:'#7d7d8c',steelL:'#c0c0cc',steelD:'#3c3c48'},
+  {dirt:'#503858',dirtL:'#8a6a94',wall:'#c09010',wallL:'#f0cc50',wallD:'#604808',steel:'#7d7d8c',steelL:'#c0c0cc',steelD:'#3c3c48'}
+];
+
+/* ================= каверны =================
+   fill  — таблица вероятностей случайного заполнения (сверху вниз, первое сработавшее)
+   obj   — рисование поверх: ['frect',x1,y1,x2,y2,t] ['rect',...] ['line',x1,y1,x2,y2,t] ['pt',x,y,t]
+*/
+const CAVES = [
+{ id:'A', name:'Первые алмазы', seed:0x1a2b3c, pal:0, need:12, time:150, dval:10, eval_:15,
+  fill:[[T.BOULDER,0.10],[T.DIAMOND,0.045]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['frect',34,18,38,20,T.DIRT], ['pt',37,20,T.EXIT],
+        ['line',6,6,33,6,T.BRICK], ['line',6,14,33,14,T.BRICK],
+        ['pt',20,6,T.DIRT], ['pt',12,14,T.DIRT], ['pt',28,14,T.DIRT] ] },
+
+{ id:'B', name:'Тоннели', seed:0x51f0a7, pal:1, need:16, time:160, dval:10, eval_:15,
+  fill:[[T.BOULDER,0.14],[T.DIAMOND,0.05]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['rect',7,4,18,10,T.BRICK], ['rect',22,4,33,10,T.BRICK],
+        ['rect',7,13,18,19,T.BRICK], ['rect',22,13,33,19,T.BRICK],
+        ['pt',7,7,T.DIRT], ['pt',18,7,T.DIRT], ['pt',22,7,T.DIRT], ['pt',33,7,T.DIRT],
+        ['pt',7,16,T.DIRT], ['pt',18,16,T.DIRT], ['pt',22,16,T.DIRT], ['pt',33,16,T.DIRT],
+        ['pt',12,4,T.DIRT], ['pt',28,4,T.DIRT], ['pt',12,19,T.DIRT], ['pt',28,19,T.DIRT],
+        ['frect',35,19,38,20,T.DIRT], ['pt',37,20,T.EXIT] ] },
+
+{ id:'C', name:'Светлячки', seed:0x9c3e11, pal:2, need:14, time:170, dval:10, eval_:20,
+  fill:[[T.BOULDER,0.09],[T.DIAMOND,0.05]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['frect',6,5,16,9,T.EMPTY], ['rect',6,5,16,9,T.BRICK], ['pt',11,9,T.DIRT],
+        ['pt',8,7,T.FIREFLY], ['pt',14,7,T.FIREFLY],
+        ['frect',23,5,33,9,T.EMPTY], ['rect',23,5,33,9,T.BRICK], ['pt',28,9,T.DIRT],
+        ['pt',25,7,T.FIREFLY], ['pt',31,7,T.FIREFLY],
+        ['frect',6,13,33,17,T.EMPTY], ['rect',6,13,33,17,T.BRICK],
+        ['pt',6,15,T.DIRT], ['pt',33,15,T.DIRT],
+        ['line',8,16,31,16,T.DIAMOND],
+        ['pt',9,14,T.FIREFLY], ['pt',20,14,T.FIREFLY], ['pt',30,14,T.FIREFLY],
+        ['frect',35,19,38,20,T.DIRT], ['pt',37,20,T.EXIT] ] },
+
+{ id:'D', name:'Бабочки', seed:0x22d4f8, pal:3, need:20, time:190, dval:10, eval_:20,
+  fill:[[T.BOULDER,0.16],[T.DIAMOND,0.012]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['frect',6,7,34,7,T.DIRT],
+        ['frect',7,8,13,12,T.EMPTY], ['rect',7,8,13,12,T.BRICK], ['pt',10,8,T.EMPTY],
+        ['pt',10,10,T.BUTTERFLY], ['line',8,6,12,6,T.BOULDER],
+        ['frect',17,8,23,12,T.EMPTY], ['rect',17,8,23,12,T.BRICK], ['pt',20,8,T.EMPTY],
+        ['pt',20,10,T.BUTTERFLY], ['line',18,6,22,6,T.BOULDER],
+        ['frect',27,8,33,12,T.EMPTY], ['rect',27,8,33,12,T.BRICK], ['pt',30,8,T.EMPTY],
+        ['pt',30,10,T.BUTTERFLY], ['line',28,6,32,6,T.BOULDER],
+        ['frect',35,19,38,20,T.DIRT], ['pt',37,20,T.EXIT] ] },
+
+{ id:'E', name:'Волшебная стена', seed:0x7b19ac, pal:4, need:16, time:200, dval:10, eval_:20, magic:30,
+  fill:[[T.BOULDER,0.08],[T.DIAMOND,0.012]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['frect',6,6,12,9,T.BOULDER], ['frect',16,6,22,9,T.BOULDER], ['frect',26,6,32,9,T.BOULDER],
+        ['frect',4,10,35,10,T.DIRT],
+        ['line',4,11,35,11,T.MAGIC],
+        ['frect',4,12,35,13,T.EMPTY],
+        ['line',4,14,35,14,T.BRICK], ['pt',9,14,T.DIRT], ['pt',20,14,T.DIRT], ['pt',31,14,T.DIRT],
+        ['frect',1,15,38,20,T.DIRT],
+        ['frect',1,4,3,20,T.DIRT], ['frect',36,4,38,20,T.DIRT],
+        ['pt',37,20,T.EXIT] ] },
+
+{ id:'F', name:'Амёба', seed:0x3fd821, pal:5, need:20, time:200, dval:10, eval_:20, amoebaTime:40, amoebaMax:180,
+  fill:[[T.BOULDER,0.12],[T.DIAMOND,0.02]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['rect',14,7,26,15,T.BRICK], ['pt',14,11,T.DIRT], ['pt',26,11,T.DIRT],
+        ['frect',19,10,21,12,T.AMOEBA],
+        ['frect',35,19,38,20,T.DIRT], ['pt',37,20,T.EXIT] ] },
+
+{ id:'G', name:'Растущая стена', seed:0x64ba90, pal:6, need:18, time:170, dval:10, eval_:20,
+  fill:[[T.BOULDER,0.11],[T.DIAMOND,0.055]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['line',6,5,6,9,T.STEEL], ['pt',6,7,T.EXPAND],
+        ['line',14,12,14,17,T.STEEL], ['pt',14,14,T.EXPAND],
+        ['line',24,4,24,9,T.STEEL], ['pt',24,6,T.EXPAND],
+        ['line',31,12,31,18,T.STEEL], ['pt',31,15,T.EXPAND],
+        ['frect',35,19,38,20,T.DIRT], ['pt',37,20,T.EXIT] ] },
+
+{ id:'H', name:'Слизь', seed:0xc71e05, pal:7, need:20, time:180, dval:10, eval_:25, slime:0.20,
+  fill:[[T.BOULDER,0.05],[T.DIAMOND,0.02]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['frect',5,3,35,8,T.DIRT],
+        ['line',5,4,35,4,T.DIAMOND], ['line',5,6,35,6,T.BOULDER],
+        ['line',4,9,36,9,T.SLIME],
+        ['frect',4,10,36,12,T.EMPTY],
+        ['line',4,13,36,13,T.BRICK], ['pt',12,13,T.DIRT], ['pt',28,13,T.DIRT],
+        ['frect',35,19,38,20,T.DIRT], ['pt',37,20,T.EXIT] ] },
+
+/* ---- второй десяток: механики начинают работать друг против друга ---- */
+
+{ id:'I', name:'Каменный дождь', seed:0x8e2205, pal:0, need:20, time:150, dval:10, eval_:20,
+  fill:[[T.BOULDER,0.26],[T.DIAMOND,0.07]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['line',5,8,22,8,T.BRICK], ['line',17,13,36,13,T.BRICK],
+        ['line',5,18,25,18,T.BRICK],
+        ['frect',37,4,38,20,T.DIRT], ['frect',34,19,38,20,T.DIRT], ['pt',37,20,T.EXIT] ] },
+
+{ id:'J', name:'Клетка', seed:0x1d7740, pal:1, need:18, time:190, dval:10, eval_:20,
+  fill:[[T.BOULDER,0.08],[T.DIAMOND,0.02]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['frect',5,10,36,10,T.EMPTY],
+        ['pt',7,10,T.BOULDER], ['pt',12,10,T.BOULDER], ['pt',15,10,T.BOULDER],
+        ['pt',20,10,T.BOULDER], ['pt',23,10,T.BOULDER], ['pt',28,10,T.BOULDER],
+        ['pt',31,10,T.BOULDER], ['pt',35,10,T.BOULDER],
+        ['line',5,11,36,11,T.BRICK],
+        ['pt',9,11,T.EMPTY], ['pt',17,11,T.EMPTY], ['pt',25,11,T.EMPTY], ['pt',33,11,T.EMPTY],
+        ['frect',5,12,36,14,T.EMPTY],
+        ['line',6,14,35,14,T.DIAMOND],
+        ['line',5,15,36,15,T.BRICK],
+        ['pt',10,12,T.FIREFLY], ['pt',18,12,T.FIREFLY], ['pt',26,12,T.FIREFLY], ['pt',34,12,T.FIREFLY],
+        ['frect',1,4,4,20,T.DIRT], ['frect',37,4,38,20,T.DIRT],
+        ['pt',37,20,T.EXIT] ] },
+
+{ id:'K', name:'Стена и бабочки', seed:0xb40c93, pal:2, need:24, time:210, dval:10, eval_:25, magic:32,
+  fill:[[T.BOULDER,0.07],[T.DIAMOND,0.012]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['frect',6,5,33,8,T.BOULDER],
+        ['frect',4,9,35,9,T.DIRT],
+        ['line',4,10,35,10,T.MAGIC],
+        ['frect',4,11,35,12,T.EMPTY],
+        ['line',4,13,35,13,T.BRICK],
+        ['pt',11,13,T.EMPTY], ['pt',21,13,T.EMPTY], ['pt',31,13,T.EMPTY],
+        ['frect',8,14,14,18,T.EMPTY], ['rect',8,14,14,18,T.BRICK], ['pt',11,14,T.EMPTY],
+        ['pt',11,16,T.BUTTERFLY],
+        ['frect',18,14,24,18,T.EMPTY], ['rect',18,14,24,18,T.BRICK], ['pt',21,14,T.EMPTY],
+        ['pt',21,16,T.BUTTERFLY],
+        ['frect',28,14,34,18,T.EMPTY], ['rect',28,14,34,18,T.BRICK], ['pt',31,14,T.EMPTY],
+        ['pt',31,16,T.BUTTERFLY],
+        ['frect',1,4,3,20,T.DIRT], ['frect',36,4,38,20,T.DIRT],
+        ['pt',37,20,T.EXIT] ] },
+
+{ id:'L', name:'Амёба в тесноте', seed:0x60f1ae, pal:3, need:24, time:200, dval:10, eval_:25,
+  amoebaTime:22, amoebaMax:70,
+  fill:[[T.BOULDER,0.13],[T.DIAMOND,0.035]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['line',10,6,30,6,T.BRICK], ['line',10,16,30,16,T.BRICK],
+        ['line',10,7,10,15,T.BRICK], ['line',30,7,30,15,T.BRICK],
+        ['pt',10,11,T.DIRT], ['pt',30,11,T.DIRT], ['pt',20,6,T.DIRT], ['pt',20,16,T.DIRT],
+        ['frect',19,10,21,12,T.AMOEBA],
+        ['frect',13,8,17,8,T.BOULDER], ['frect',23,8,27,8,T.BOULDER],
+        ['frect',35,19,38,20,T.DIRT], ['pt',37,20,T.EXIT] ] },
+
+{ id:'M', name:'Слизь и светлячки', seed:0x2a95c7, pal:4, need:22, time:190, dval:10, eval_:25, slime:0.16,
+  fill:[[T.BOULDER,0.06],[T.DIAMOND,0.025]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['frect',5,3,35,8,T.DIRT],
+        ['line',5,5,35,5,T.DIAMOND], ['line',5,7,35,7,T.BOULDER],
+        ['line',4,9,36,9,T.SLIME],
+        ['frect',4,10,36,13,T.EMPTY],
+        ['pt',9,11,T.FIREFLY], ['pt',20,11,T.FIREFLY], ['pt',31,11,T.FIREFLY],
+        ['line',4,14,36,14,T.BRICK], ['pt',14,14,T.DIRT], ['pt',26,14,T.DIRT],
+        ['frect',1,4,3,20,T.DIRT], ['frect',37,4,38,20,T.DIRT],
+        ['pt',37,20,T.EXIT] ] },
+
+{ id:'N', name:'Лабиринт', seed:0x77e318, pal:5, need:22, time:190, dval:10, eval_:25,
+  fill:[[T.BOULDER,0.10],[T.DIAMOND,0.05]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['line',8,3,8,10,T.STEEL], ['pt',8,6,T.EXPAND],
+        ['line',16,11,16,19,T.STEEL], ['pt',16,15,T.EXPAND],
+        ['line',26,3,26,10,T.STEEL], ['pt',26,6,T.EXPAND],
+        ['frect',6,15,12,19,T.EMPTY], ['rect',6,15,12,19,T.BRICK], ['pt',9,15,T.EMPTY],
+        ['pt',9,17,T.BUTTERFLY], ['frect',6,13,12,13,T.DIRT], ['line',7,12,11,12,T.BOULDER],
+        ['frect',28,15,34,19,T.EMPTY], ['rect',28,15,34,19,T.BRICK], ['pt',31,15,T.EMPTY],
+        ['pt',31,17,T.BUTTERFLY], ['frect',28,13,34,13,T.DIRT], ['line',29,12,33,12,T.BOULDER],
+        ['frect',35,3,38,5,T.DIRT], ['pt',37,4,T.EXIT] ] },
+
+{ id:'O', name:'Гонка', seed:0xc0de11, pal:6, need:30, time:100, dval:10, eval_:30,
+  fill:[[T.BOULDER,0.05],[T.DIAMOND,0.10]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['line',1,6,33,6,T.BRICK],
+        ['line',6,11,38,11,T.BRICK],
+        ['line',1,16,33,16,T.BRICK],
+        ['frect',35,19,38,20,T.DIRT], ['pt',37,20,T.EXIT] ] },
+
+{ id:'P', name:'Финал', seed:0xf1a1e5, pal:7, need:30, time:240, dval:15, eval_:30,
+  magic:28, amoebaTime:30, amoebaMax:90, slime:0.18,
+  fill:[[T.BOULDER,0.09],[T.DIAMOND,0.02]],
+  obj:[ ['frect',1,1,4,3,T.DIRT], ['pt',2,2,T.PLAYER],
+        ['frect',6,4,16,7,T.BOULDER],
+        ['frect',5,8,17,8,T.DIRT],
+        ['line',5,9,17,9,T.MAGIC],
+        ['frect',5,10,17,12,T.EMPTY],
+        ['line',5,13,17,13,T.BRICK], ['pt',11,13,T.DIRT],
+        ['frect',22,4,34,8,T.DIRT],
+        ['line',22,6,34,6,T.BOULDER],
+        ['line',21,9,35,9,T.SLIME],
+        ['frect',21,10,35,13,T.EMPTY],
+        ['pt',25,11,T.FIREFLY], ['pt',32,11,T.FIREFLY],
+        ['line',21,14,35,14,T.BRICK], ['pt',28,14,T.DIRT],
+        ['frect',14,16,26,20,T.EMPTY], ['rect',14,16,26,20,T.BRICK], ['pt',20,16,T.EMPTY],
+        ['pt',18,18,T.BUTTERFLY], ['pt',23,18,T.BUTTERFLY],
+        ['frect',18,15,22,15,T.DIRT],
+        ['frect',19,10,20,11,T.AMOEBA],
+        ['frect',1,4,4,20,T.DIRT], ['frect',36,4,38,20,T.DIRT],
+        ['pt',37,20,T.EXIT] ] }
+];
+
+
+
+/* ================= бонусные пещеры ================= */
+const BONUS = [
+{ id:'B1', name:'bonus', seed:0x0b0111, pal:6, need:0, time:20, dval:20, eval_:20,
+  fill:[],
+  obj:[ ['frect',1,1,38,20,T.STEEL],
+        ['frect',6,7,33,15,T.DIRT],
+        ['line',7,10,32,10,T.DIAMOND], ['line',7,13,32,13,T.DIAMOND],
+        ['pt',6,8,T.PLAYER], ['pt',33,8,T.EXITOPEN] ] },
+
+{ id:'B2', name:'bonus', seed:0x0b0222, pal:2, need:0, time:20, dval:20, eval_:20,
+  fill:[],
+  obj:[ ['frect',1,1,38,20,T.STEEL],
+        ['frect',4,5,35,17,T.DIRT],
+        ['line',5,7,34,7,T.DIAMOND], ['line',5,11,34,11,T.DIAMOND], ['line',5,15,34,15,T.DIAMOND],
+        ['line',12,8,12,10,T.BRICK], ['line',24,12,24,14,T.BRICK],
+        ['pt',4,6,T.PLAYER], ['pt',35,16,T.EXITOPEN] ] },
+
+{ id:'B3', name:'bonus', seed:0x0b0333, pal:4, need:0, time:20, dval:20, eval_:20,
+  fill:[],
+  obj:[ ['frect',1,1,38,20,T.STEEL],
+        ['frect',8,4,31,18,T.DIRT],
+        ['frect',9,6,30,6,T.DIAMOND], ['frect',9,9,30,9,T.DIAMOND],
+        ['frect',9,12,30,12,T.DIAMOND], ['frect',9,15,30,15,T.DIAMOND],
+        ['pt',8,5,T.PLAYER], ['pt',31,17,T.EXITOPEN] ] }
+];
+
+/* ================= языки ================= */
+const I18N = {
+ru:{ lab:'РУС',
+  tMove:'крестовина — движение', nextBtn:'ДАЛЬШЕ', menuBtn:'В МЕНЮ', saveBtn:'ЗАПИСАТЬ',
+  lvl:'УРОВЕНЬ', dia:'АЛМАЗЫ', time:'ВРЕМЯ', score:'ОЧКИ', lives:'ЖИЗНИ',
+  foot:'ESC — пауза · R — заново · TAB — вся пещера',
+  play:'ИГРАТЬ', records:'РЕКОРДЫ', noRec:'Рекордов пока нет.',
+  intro:'Копайте землю, собирайте алмазы, не попадайте под валуны. Когда норма собрана, выход начинает мигать.',
+  kMove:'движение', kGrab:'копать и брать, не сходя с места', kPause:'пауза',
+  kRestart:'начать уровень заново', kMap:'посмотреть всю пещеру (удерживать)',
+  hint:'80 уровней: шестнадцать пещер, пять кругов. С каждым кругом земля лежит иначе, нормы растут, времени меньше, а очки за алмаз выше. Каждый восьмой уровень — бонусный.',
+  ring:'КРУГ', cave:'ПЕЩЕРА',
+  paused:'ПАУЗА', pauseKeys:'ESC — продолжить · R — заново · M — меню',
+  done:'ПЕЩЕРА ПРОЙДЕНА', tbonus:'Бонус за время', total:'Всего очков', next:'Пробел — дальше',
+  bonusName:'Бонусная пещера',
+  bonusIntro:'БОНУСНАЯ ПЕЩЕРА', bonusRules:'Двадцать секунд. Дойдёте до выхода — плюс жизнь. Смерть здесь ничего не стоит.',
+  bonusWin:'ПЛЮС ОДНА ЖИЗНЬ', bonusLose:'БОНУС УПУЩЕН',
+  over:'ИГРА ОКОНЧЕНА', overSub:'Жизни закончились.',
+  win:'ВСЕ 80 УРОВНЕЙ ПРОЙДЕНЫ', winSub:'Полное прохождение.',
+  gotScore:'Очков набрано', reached:'дошли до уровня',
+  yourName:'Ваше имя для таблицы рекордов:', enterKey:'Enter — записать', toMenu:'Пробел — в меню' },
+uk:{ lab:'УКР',
+  tMove:'хрестовина — рух', nextBtn:'ДАЛІ', menuBtn:'ДО МЕНЮ', saveBtn:'ЗАПИСАТИ',
+  lvl:'РІВЕНЬ', dia:'ДІАМАНТИ', time:'ЧАС', score:'ОЧКИ', lives:'ЖИТТЯ',
+  foot:'ESC — пауза · R — спочатку · TAB — уся печера',
+  play:'ГРАТИ', records:'РЕКОРДИ', noRec:'Рекордів поки немає.',
+  intro:'Копайте землю, збирайте діаманти, не потрапляйте під брили. Коли норму зібрано, вихід починає блимати.',
+  kMove:'рух', kGrab:'копати й брати, не сходячи з місця', kPause:'пауза',
+  kRestart:'почати рівень спочатку', kMap:'подивитися всю печеру (утримувати)',
+  hint:'80 рівнів: шістнадцять печер, п’ять кіл. З кожним колом земля лежить інакше, норми зростають, часу менше, а очок за діамант більше. Кожен восьмий рівень — бонусний.',
+  ring:'КОЛО', cave:'ПЕЧЕРА',
+  paused:'ПАУЗА', pauseKeys:'ESC — далі · R — спочатку · M — меню',
+  done:'ПЕЧЕРУ ПРОЙДЕНО', tbonus:'Бонус за час', total:'Усього очок', next:'Пробіл — далі',
+  bonusName:'Бонусна печера',
+  bonusIntro:'БОНУСНА ПЕЧЕРА', bonusRules:'Двадцять секунд. Дійдете до виходу — плюс життя. Смерть тут нічого не коштує.',
+  bonusWin:'ПЛЮС ОДНЕ ЖИТТЯ', bonusLose:'БОНУС ВТРАЧЕНО',
+  over:'ГРУ ЗАВЕРШЕНО', overSub:'Життя скінчилися.',
+  win:'УСІ 80 РІВНІВ ПРОЙДЕНО', winSub:'Повне проходження.',
+  gotScore:'Набрано очок', reached:'дійшли до рівня',
+  yourName:'Ваше ім’я для таблиці рекордів:', enterKey:'Enter — записати', toMenu:'Пробіл — до меню' },
+en:{ lab:'ENG',
+  tMove:'D-pad — move', nextBtn:'CONTINUE', menuBtn:'MENU', saveBtn:'SAVE',
+  lvl:'LEVEL', dia:'GEMS', time:'TIME', score:'SCORE', lives:'LIVES',
+  foot:'ESC — pause · R — restart · TAB — whole cave',
+  play:'PLAY', records:'HIGH SCORES', noRec:'No scores yet.',
+  intro:'Dig through the soil, collect the gems, stay out from under the boulders. Once the quota is met, the exit starts flashing.',
+  kMove:'move', kGrab:'dig and grab without moving', kPause:'pause',
+  kRestart:'restart the level', kMap:'view the whole cave (hold)',
+  hint:'80 levels: sixteen caves, five rounds. Each round lays the soil out differently, raises the quota, cuts the time and pays more per gem. Every eighth level is a bonus cave.',
+  ring:'ROUND', cave:'CAVE',
+  paused:'PAUSED', pauseKeys:'ESC — resume · R — restart · M — menu',
+  done:'CAVE CLEARED', tbonus:'Time bonus', total:'Total score', next:'Space — continue',
+  bonusName:'Bonus cave',
+  bonusIntro:'BONUS CAVE', bonusRules:'Twenty seconds. Reach the exit and gain a life. Dying here costs nothing.',
+  bonusWin:'ONE EXTRA LIFE', bonusLose:'BONUS MISSED',
+  over:'GAME OVER', overSub:'Out of lives.',
+  win:'ALL 80 LEVELS CLEARED', winSub:'Full run.',
+  gotScore:'Final score', reached:'reached level',
+  yourName:'Your name for the high score table:', enterKey:'Enter — save', toMenu:'Space — menu' }
+};
+let LANG = 'en';
+let TOUCH = false;
+const t = k => I18N[LANG][k];
+
+/* ================= круги сложности ================= */
+const RINGS = 5, PER_RING = 16, TOTAL = RINGS * PER_RING;
+const RING_TIME  = [1.00, 0.94, 0.88, 0.82, 0.76];   // множитель времени
+const NEED_STEP  = {A:2,B:2,C:2,D:1,E:1,F:2,G:2,H:2,I:2,J:1,K:1,L:2,M:2,N:1,O:4,P:1};
+const RING_SEED  = [0, 0x1f83d9ab, 0x5be0cd19, 0x9b05688c, 0x1f83d9b5];
+
+// Уровень n (0..79) — та же пещера, но другое зерно, норма, время и цена алмаза.
+function levelSpec(n){
+  const ring = Math.floor(n / PER_RING);
+  const base = CAVES[n % PER_RING];
+  const mul  = ring + 1;
+  return Object.assign({}, base, {
+    seed:  (base.seed ^ RING_SEED[ring]) >>> 0,
+    need:  base.need + (NEED_STEP[base.id] || 1) * ring,
+    time:  Math.round(base.time * RING_TIME[ring]),
+    dval:  base.dval  * mul,
+    eval_: base.eval_ * mul,
+    magic:      base.magic      ? Math.round(base.magic * RING_TIME[ring]) : base.magic,
+    amoebaTime: base.amoebaTime ? Math.round(base.amoebaTime * RING_TIME[ring]) : base.amoebaTime,
+    ring: ring, num: n + 1, mul: mul
+  });
+}
+// Бонусная пещера после каждого восьмого уровня.
+function bonusSpec(n){
+  const b = BONUS[Math.floor(n / 8) % BONUS.length];
+  return Object.assign({}, b, {
+    seed: (b.seed ^ RING_SEED[Math.floor(n / PER_RING)]) >>> 0,
+    dval: b.dval * (Math.floor(n / PER_RING) + 1),
+    eval_: b.eval_ * (Math.floor(n / PER_RING) + 1),
+    bonus: true, num: n + 1
+  });
+}
+
+/* ================= сборка каверны ================= */
+function buildCave(cv){
+  const g = new Uint8Array(W*H);
+  const rand = rng(cv.seed);
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++){
+    let t;
+    if (x===0||y===0||x===W-1||y===H-1) t = T.STEEL;
+    else {
+      t = T.DIRT;
+      const r = rand();
+      let acc = 0;
+      for (const [tile,p] of cv.fill){ acc += p; if (r < acc){ t = tile; break; } }
+    }
+    g[y*W+x] = t;
+  }
+  const put = (x,y,t)=>{ if (x>0&&y>0&&x<W-1&&y<H-1) g[y*W+x]=t; };
+  for (const o of (cv.obj||[])){
+    const k = o[0];
+    if (k==='pt') put(o[1],o[2],o[3]);
+    else if (k==='frect'){ for(let y=o[2];y<=o[4];y++) for(let x=o[1];x<=o[3];x++) put(x,y,o[5]); }
+    else if (k==='rect'){
+      for(let x=o[1];x<=o[3];x++){ put(x,o[2],o[5]); put(x,o[4],o[5]); }
+      for(let y=o[2];y<=o[4];y++){ put(o[1],y,o[5]); put(o[3],y,o[5]); }
+    }
+    else if (k==='line'){
+      const n = Math.max(Math.abs(o[3]-o[1]), Math.abs(o[4]-o[2]));
+      const sx = Math.sign(o[3]-o[1]), sy = Math.sign(o[4]-o[2]);
+      for(let i=0;i<=n;i++) put(o[1]+sx*i, o[2]+sy*i, o[5]);
+    }
+  }
+  return g;
+}
+
+/* ================= спрайты ================= */
+function spr(draw){
+  const c = document.createElement('canvas');
+  c.width = SS; c.height = SS;
+  const x = c.getContext('2d');
+  draw(x);
+  return c;
+}
+function px(c,x,y,w,h,col){ c.fillStyle = col; c.fillRect(x,y,w,h); }
+
+const ART_PLAYER = [
+'................',
+'....kkkkkkkk....',
+'...kffffffffk...',
+'...kfwpffpwfk...',
+'...kfwpffpwfk...',
+'...kffffffffk...',
+'...kkffffffkk...',
+'....kkkkkkkk....',
+'..dbbbbbbbbbbd..',
+'..dblbbbbbblbd..',
+'..dbbbbbbbbbbd..',
+'..dbbbbbbbbbbd..',
+'...dbbbbbbbbd...',
+'....dd....dd....',
+'...ddd....ddd...',
+'................'];
+const ART_BLINK = [
+'................',
+'....kkkkkkkk....',
+'...kffffffffk...',
+'...kffffffffk...',
+'...kfkkffkkfk...',
+'...kffffffffk...',
+'...kkffffffkk...',
+'....kkkkkkkk....',
+'..dbbbbbbbbbbd..',
+'..dblbbbbbblbd..',
+'..dbbbbbbbbbbd..',
+'..dbbbbbbbbbbd..',
+'...dbbbbbbbbd...',
+'....dd....dd....',
+'...ddd....ddd...',
+'................'];
+const ART_WALK = [
+'................',
+'....kkkkkkkk....',
+'...kffffffffk...',
+'...kffwpfwpfk...',
+'...kffwpfwpfk...',
+'...kffffffffk...',
+'...kkffffffkk...',
+'....kkkkkkkk....',
+'...dbbbbbbbbd...',
+'..dbblbbbblbbd..',
+'..dbbbbbbbbbbd..',
+'...dbbbbbbbbd...',
+'....dbbbbbbd....',
+'...ddd....dd....',
+'..ddd......ddd..',
+'................'];
+const PCOL = {k:'#000000',f:'#f0c090',w:'#ffffff',p:'#000000',b:'#3050c8',l:'#7090f0',d:'#182c78'};
+
+function art(rows,cols){
+  return spr(c=>{
+    for(let y=0;y<16;y++) for(let x=0;x<16;x++){
+      const ch = rows[y][x];
+      if (ch!=='.') px(c,x,y,1,1,cols[ch]);
+    }
+  });
+}
+function mirror(src){
+  const c = document.createElement('canvas'); c.width=SS; c.height=SS;
+  const x = c.getContext('2d');
+  x.translate(SS,0); x.scale(-1,1); x.drawImage(src,0,0);
+  return c;
+}
+
+function buildAtlas(pal){
+  const A = {};
+  // земля
+  const speck = [[2,3],[6,1],[10,4],[13,2],[4,7],[9,8],[14,9],[1,11],[6,13],[11,12],[3,14],[15,6],[8,5]];
+  A.dirt = [spr(c=>{
+    px(c,0,0,16,16,pal.dirt);
+    for(const [x,y] of speck){ px(c,x,y,2,1,pal.dirtL); px(c,x,y+1,1,1,pal.dirt); }
+    px(c,0,0,16,1,pal.dirtL);
+  })];
+  // валун
+  A.boulder = [spr(c=>{
+    for(let y=0;y<16;y++) for(let x=0;x<16;x++){
+      const dx=x-7.5, dy=y-7.5, d=Math.sqrt(dx*dx+dy*dy);
+      if (d<7.3){
+        let col = '#909090';
+        if (d>6.1) col = '#484848';
+        else if (dx+dy < -3.5) col = '#e0e0e0';
+        else if (dx+dy < 0) col = '#b8b8b8';
+        else if (dx+dy > 5) col = '#606060';
+        px(c,x,y,1,1,col);
+      }
+    }
+  })];
+  // алмаз, 4 кадра блеска
+  A.diamond = [0,1,2,3].map(f=>spr(c=>{
+    for(let y=0;y<16;y++) for(let x=0;x<16;x++){
+      const dx=Math.abs(x-7.5), dy=Math.abs(y-7.5);
+      const d = dx+dy;
+      if (d<7.6){
+        let col = '#00b8d8';
+        if (d>6.4) col = '#006888';
+        else if (x-y > 2) col = '#0090b8';
+        else if (y-x > 2) col = '#40d8f0';
+        px(c,x,y,1,1,col);
+      }
+    }
+    const sx = [4,6,9,11][f], sy = [5,9,4,8][f];
+    px(c,sx,sy,2,1,'#ffffff'); px(c,sx+1,sy-1,1,3,'#ffffff');
+  }));
+  // кирпичная стена
+  A.brick = [spr(c=>{
+    px(c,0,0,16,16,pal.wall);
+    px(c,0,0,16,1,pal.wallL);
+    for(const y of [0,8]) px(c,0,y+7,16,1,pal.wallD);
+    px(c,7,0,1,7,pal.wallD); px(c,0,8,1,7,pal.wallD); px(c,15,8,1,7,pal.wallD);
+    px(c,0,1,7,1,pal.wallL); px(c,8,1,8,1,pal.wallL); px(c,1,9,14,1,pal.wallL);
+  })];
+  // сталь
+  const steel = c=>{
+    px(c,0,0,16,16,pal.steel);
+    px(c,0,0,16,2,pal.steelL); px(c,0,0,2,16,pal.steelL);
+    px(c,0,14,16,2,pal.steelD); px(c,14,0,2,16,pal.steelD);
+    px(c,4,4,2,2,pal.steelL); px(c,10,10,2,2,pal.steelD);
+  };
+  A.steel = [spr(steel)];
+  // выход закрытый / открытый
+  A.exit = [spr(c=>{ steel(c); px(c,4,4,8,8,'#181818'); px(c,5,5,6,6,'#282828'); })];
+  A.exitopen = [0,1].map(f=>spr(c=>{
+    px(c,0,0,16,16, f? '#f0f0f0':'#f0d000');
+    px(c,3,3,10,10, f? '#f0d000':'#f0f0f0');
+    px(c,6,6,4,4, f? '#f0f0f0':'#f0d000');
+    px(c,0,0,16,1,'#ffffff'); px(c,0,15,16,1,'#806800');
+  }));
+  // светлячок и бабочка
+  const bug = col => [0,1,2,3].map(f=>spr(c=>{
+    const o = [[3,3],[9,3],[9,9],[3,9]];
+    for(let i=0;i<4;i++){
+      const [bx,by] = o[(i+f)%4];
+      px(c,bx,by,4,4, i===0? '#ffffff' : col);
+    }
+    px(c,6,6,4,4,col);
+  }));
+  A.firefly = bug('#c83020');
+  A.butterfly = bug('#f0d000');
+  // амёба
+  A.amoeba = [0,1,2,3].map(f=>spr(c=>{
+    px(c,0,0,16,16,'#20a020');
+    const r = rng(0x1000+f*37);
+    for(let i=0;i<26;i++){
+      const x=(r()*15)|0, y=(r()*15)|0;
+      px(c,x,y,2,2, i%3? '#40d040':'#106810');
+    }
+  }));
+  // волшебная стена
+  A.magic = [spr(c=>{ // выключена
+    px(c,0,0,16,16,pal.wall);
+    px(c,0,7,16,1,pal.wallD); px(c,7,0,1,7,pal.wallD); px(c,0,8,1,8,pal.wallD);
+    px(c,0,0,16,1,pal.wallL);
+  })];
+  A.magicon = [0,1,2].map(f=>spr(c=>{
+    const cols = ['#f0d000','#ffffff','#00d8f0'];
+    px(c,0,0,16,16,cols[f]);
+    px(c,0,7,16,1,'#202020'); px(c,7,0,1,7,'#202020'); px(c,0,8,1,8,'#202020');
+    px(c,2,2,4,3,cols[(f+1)%3]); px(c,10,10,4,3,cols[(f+2)%3]);
+  }));
+  A.magicdead = [spr(c=>{
+    px(c,0,0,16,16,'#404040');
+    px(c,0,7,16,1,'#202020'); px(c,7,0,1,7,'#202020'); px(c,0,8,1,8,'#202020');
+  })];
+  // слизь
+  A.slime = [0,1,2,3].map(f=>spr(c=>{
+    px(c,0,0,16,16,'#204858');
+    const r = rng(0x2000+f*91);
+    for(let i=0;i<20;i++){
+      const x=(r()*14)|0, y=(r()*14)|0;
+      px(c,x,y,3,2, i%2? '#3c8098':'#102c38');
+    }
+  }));
+  // растущая стена
+  A.expand = [spr(c=>{
+    px(c,0,0,16,16,pal.wall);
+    px(c,0,0,16,1,pal.wallL); px(c,0,7,16,1,pal.wallD); px(c,0,15,16,1,pal.wallD);
+    px(c,0,0,2,16,pal.wallL); px(c,14,0,2,16,pal.wallL);
+  })];
+  // взрыв
+  A.boom = [0,1,2,3].map(f=>spr(c=>{
+    const sz = [4,8,14,10][f], col = ['#f0d000','#ffffff','#ffffff','#f08000'][f];
+    const o = (16-sz)>>1;
+    px(c,o,o,sz,sz,col);
+    if (f>0){ const i=(16-sz+4)>>1; px(c,i,i,sz-4,sz-4,'#f0d000'); }
+  }));
+  A.birth = [0,1,2,3].map(f=>spr(c=>{
+    const sz = [14,10,8,10][f];
+    const o = (16-sz)>>1;
+    px(c,o,o,sz,sz, f<2? '#ffffff':'#00d8f0');
+  }));
+  A.inbox = [0,1].map(f=>spr(c=>{
+    steel(c);
+    if (f) px(c,4,4,8,8,'#ffffff'); else px(c,4,4,8,8,'#181818');
+  }));
+  // Рокфорд
+  const idle = art(ART_PLAYER,PCOL), blink = art(ART_BLINK,PCOL), walk = art(ART_WALK,PCOL);
+  A.player = [idle,idle,idle,blink];
+  A.walkR = [walk,idle];
+  A.walkL = [mirror(walk),idle];
+  return A;
+}
+
+/* ================= звук ================= */
+let AC = null;
+function ac(){ if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
+function noise(dur,f0,f1,vol){
+  const c = ac(); if(!c) return;
+  const n = c.sampleRate*dur|0, b = c.createBuffer(1,n,c.sampleRate), d = b.getChannelData(0);
+  for(let i=0;i<n;i++) d[i] = (Math.random()*2-1)*(1-i/n);
+  const s = c.createBufferSource(); s.buffer = b;
+  const f = c.createBiquadFilter(); f.type='bandpass'; f.frequency.setValueAtTime(f0,c.currentTime);
+  f.frequency.exponentialRampToValueAtTime(f1,c.currentTime+dur);
+  const g = c.createGain(); g.gain.setValueAtTime(vol,c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dur);
+  s.connect(f); f.connect(g); g.connect(c.destination); s.start();
+}
+function tone(f0,f1,dur,vol,type){
+  const c = ac(); if(!c) return;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = type||'square';
+  o.frequency.setValueAtTime(f0,c.currentTime);
+  o.frequency.exponentialRampToValueAtTime(Math.max(f1,1),c.currentTime+dur);
+  g.gain.setValueAtTime(vol,c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dur);
+  o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+dur);
+}
+const SFX = {
+  dig:    ()=>noise(0.06,900,300,0.10),
+  step:   ()=>noise(0.04,600,300,0.05),
+  gem:    ()=>tone(900,1800,0.10,0.10),
+  rock:   ()=>noise(0.10,220,60,0.16),
+  boom:   ()=>noise(0.55,900,50,0.30),
+  push:   ()=>noise(0.09,300,120,0.10),
+  open:   ()=>{ tone(500,700,0.08,0.10); setTimeout(()=>tone(700,900,0.08,0.10),90); setTimeout(()=>tone(900,1300,0.14,0.10),180); },
+  done:   ()=>{ [600,800,1000,1400].forEach((f,i)=>setTimeout(()=>tone(f,f*1.2,0.12,0.10),i*90)); },
+  die:    ()=>tone(400,60,0.7,0.16,'sawtooth'),
+  tick:   ()=>tone(1500,1500,0.03,0.05)
+};
+
+/* ================= состояние игры ================= */
+const G = {
+  g:null, fall:null, dir:null, ph:null, scn:null,
+  cave:null, ci:0, pal:null, atlas:null,
+  px:0, py:0, alive:true, born:0,
+  lvl:0, bonus:false, rnd:null, log:null, scoreAtStart:0,
+  need:0, got:0, score:0, lives:10, time:0, subtick:0,
+  magicState:0, magicTimer:0,
+  amoebaCount:0, amoebaGrow:false, amoebaFast:false, amoebaTimer:0, amoebaConvert:0,
+  camx:0, camy:0, state:'menu', frame:0, pushCount:0,
+  exitOpen:false, endTimer:0, overview:false
+};
+const keys = {};
+let cv, ctx, panel, overlay;
+
+const idx = (x,y)=> y*W+x;
+const get = (x,y)=> (x<0||y<0||x>=W||y>=H) ? T.STEEL : G.g[y*W+x];
+const setT = (x,y,t)=>{ G.g[y*W+x] = t; };
+
+/* ================= запуск уровня ================= */
+function startLevel(n, isBonus, keepScore){
+  const cv0 = isBonus ? bonusSpec(n) : levelSpec(n);
+  G.lvl = n; G.bonus = !!isBonus; G.cave = cv0;
+  G.pal = PALETTES[cv0.pal];
+  G.atlas = buildAtlas(G.pal);
+  G.g = buildCave(cv0);
+  G.fall = new Uint8Array(W*H);
+  G.dir  = new Uint8Array(W*H);
+  G.ph   = new Uint8Array(W*H);
+  G.scn  = new Uint8Array(W*H);
+  G.need = cv0.need; G.got = 0;
+  G.time = cv0.time; G.subtick = 0;
+  G.alive = true; G.born = 14; G.endTimer = 0; G.exitOpen = false;
+  G.magicState = 0; G.magicTimer = Math.round((cv0.magic||0) * 1000/TICK);
+  G.amoebaTimer = Math.round((cv0.amoebaTime||0) * 1000/TICK);
+  G.amoebaFast = false; G.amoebaConvert = 0;
+  G.pushCount = 0;
+  if (!keepScore){ G.score = 0; G.lives = 10; }
+  G.scoreAtStart = G.score;              // при смерти очки этой попытки сгорают
+  G.rnd = rng((cv0.seed ^ 0x5f3a71c9) >>> 0);   // вся случайность в игре — из зерна уровня
+  G.log = [];                                    // журнал ввода для серверной проверки
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++){
+    if (G.g[idx(x,y)]===T.PLAYER){ G.px=x; G.py=y; setT(x,y,T.INBOX); }
+  }
+  G.camx = clamp(G.px-(VW>>1),0,W-VW);
+  G.camy = clamp(G.py-(VH>>1),0,H-VH);
+  if (G.bonus) G.exitOpen = true;
+  G.state = 'play';
+  hideOverlay();
+  updateHud();
+}
+function advance(){
+  if (G.bonus){ startLevel(G.lvl+1, false, true); return; }
+  if ((G.lvl+1) % 8 === 0 && G.lvl+1 < TOTAL){ startLevel(G.lvl, true, true); return; }
+  if (G.lvl+1 >= TOTAL){ G.state = 'over'; showVictory(); return; }
+  startLevel(G.lvl+1, false, true);
+}
+const clamp = (v,a,b)=> v<a?a : v>b?b : v;
+
+/* ================= взрыв ================= */
+function explode(x,y,intoDiamonds){
+  SFX.boom();
+  for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++){
+    const nx = x+dx, ny = y+dy;
+    if (nx<1||ny<1||nx>=W-1||ny>=H-1) continue;
+    const t = G.g[idx(nx,ny)];
+    if (t===T.STEEL || t===T.EXIT) continue;
+    if (t===T.PLAYER) killPlayer(false);
+    G.g[idx(nx,ny)] = intoDiamonds ? T.BIRTH : T.BOOM;
+    G.ph[idx(nx,ny)] = 4;
+    G.fall[idx(nx,ny)] = 0;
+    G.scn[idx(nx,ny)] = 1;
+  }
+}
+function killPlayer(withBoom){
+  if (!G.alive) return;
+  G.alive = false;
+  G.endTimer = 22;
+  SFX.die();
+  if (withBoom) explode(G.px,G.py,false);
+}
+
+/* ================= движение игрока ================= */
+function playerStep(){
+  if (G.born > 0){
+    G.born--;
+    if (G.born === 0){ setT(G.px,G.py,T.PLAYER); }
+    return;
+  }
+  if (!G.alive) return;
+  let d = -1;
+  if (keys.up) d = 0; else if (keys.right) d = 1;
+  else if (keys.down) d = 2; else if (keys.left) d = 3;
+  if (d < 0){ G.pushCount = 0; return; }
+  const grab = !!keys.grab;
+  const nx = G.px + DX[d], ny = G.py + DY[d];
+  const t = get(nx,ny);
+
+  if (t===T.STEEL || t===T.BRICK || t===T.EXIT || t===T.MAGIC ||
+      t===T.SLIME || t===T.EXPAND || t===T.FIREFLY || t===T.BUTTERFLY || t===T.AMOEBA){
+    if (t===T.FIREFLY||t===T.BUTTERFLY||t===T.AMOEBA) return;
+    return;
+  }
+  if (t===T.BOULDER){
+    if (DY[d]!==0) return;                       // валун вверх/вниз не двигается
+    if (G.fall[idx(nx,ny)]) return;
+    if (get(nx+DX[d],ny)!==T.EMPTY) return;
+    G.pushCount++;
+    if (G.pushCount < 3){ SFX.push(); return; }  // сопротивление, как в оригинале
+    G.pushCount = 0;
+    setT(nx+DX[d],ny,T.BOULDER);
+    G.fall[idx(nx+DX[d],ny)] = 0;
+    setT(nx,ny,T.EMPTY);
+    SFX.rock();
+    if (grab) return;
+    movePlayerTo(nx,ny);
+    return;
+  }
+  G.pushCount = 0;
+  if (t===T.DIAMOND){
+    collect();
+    if (grab){ setT(nx,ny,T.EMPTY); return; }
+    setT(nx,ny,T.EMPTY);
+    movePlayerTo(nx,ny);
+    return;
+  }
+  if (t===T.EXITOPEN){
+    setT(G.px,G.py,T.EMPTY);
+    G.state = 'won'; G.endTimer = 30;
+    SFX.done();
+    return;
+  }
+  if (t===T.DIRT){
+    SFX.dig();
+    if (grab){ setT(nx,ny,T.EMPTY); return; }
+    setT(nx,ny,T.EMPTY);
+    movePlayerTo(nx,ny);
+    return;
+  }
+  if (t===T.EMPTY){
+    if (grab) return;
+    SFX.step();
+    movePlayerTo(nx,ny);
+  }
+}
+function movePlayerTo(nx,ny){
+  setT(G.px,G.py,T.EMPTY);
+  G.px = nx; G.py = ny;
+  setT(nx,ny,T.PLAYER);
+  G.scn[idx(nx,ny)] = 1;
+}
+function collect(){
+  G.got++;
+  G.score += (G.got > G.need) ? G.cave.eval_ : G.cave.dval;
+  SFX.gem();
+  if (G.got === G.need){ openExit(); }
+}
+function openExit(){
+  G.exitOpen = true;
+  SFX.open();
+  for (let i=0;i<W*H;i++) if (G.g[i]===T.EXIT) G.g[i] = T.EXITOPEN;
+}
+
+/* ================= падающие объекты ================= */
+function stepFalling(x,y,t){
+  const below = get(x,y+1);
+  const i = idx(x,y);
+  const falling = G.fall[i];
+
+  if (below===T.EMPTY){
+    G.g[i] = T.EMPTY; G.fall[i] = 0;
+    const j = idx(x,y+1);
+    G.g[j] = t; G.fall[j] = 1; G.scn[j] = 1;
+    return;
+  }
+  if (below===T.MAGIC){
+    if (!falling){ G.fall[i]=0; return; }
+    if (G.magicState===0){ G.magicState = 1; }
+    if (G.magicState===1){
+      const ty = y+2;
+      const out = (t===T.BOULDER) ? T.DIAMOND : T.BOULDER;
+      if (get(x,ty)===T.EMPTY){
+        G.g[idx(x,ty)] = out; G.fall[idx(x,ty)] = 1; G.scn[idx(x,ty)] = 1;
+      }
+      G.g[i] = T.EMPTY; G.fall[i] = 0;
+      SFX.gem();
+    } else {
+      G.fall[i] = 0;
+    }
+    return;
+  }
+  if (below===T.SLIME && falling){
+    if (G.rnd() < (G.cave.slime||0.15) && get(x,y+2)===T.EMPTY){
+      G.g[i] = T.EMPTY; G.fall[i] = 0;
+      G.g[idx(x,y+2)] = t; G.fall[idx(x,y+2)] = 1; G.scn[idx(x,y+2)] = 1;
+    }
+    return;
+  }
+  if (falling){
+    if (below===T.PLAYER){ killPlayer(true); return; }
+    if (below===T.FIREFLY || below===T.BUTTERFLY){
+      explode(x,y+1, below===T.BUTTERFLY);
+      return;
+    }
+    if (below===T.AMOEBA){ G.fall[i] = 0; return; }
+  }
+  if (ROUND[below] && !G.fall[idx(x,y+1)]){
+    if (get(x-1,y)===T.EMPTY && get(x-1,y+1)===T.EMPTY){
+      G.g[i] = T.EMPTY; G.fall[i] = 0;
+      G.g[idx(x-1,y)] = t; G.fall[idx(x-1,y)] = 1; G.scn[idx(x-1,y)] = 1;
+      return;
+    }
+    if (get(x+1,y)===T.EMPTY && get(x+1,y+1)===T.EMPTY){
+      G.g[i] = T.EMPTY; G.fall[i] = 0;
+      G.g[idx(x+1,y)] = t; G.fall[idx(x+1,y)] = 1; G.scn[idx(x+1,y)] = 1;
+      return;
+    }
+  }
+  if (falling){ SFX.rock(); }
+  G.fall[i] = 0;
+}
+
+/* ================= враги ================= */
+function stepBug(x,y,t){
+  const i = idx(x,y);
+  // рядом игрок или амёба — взрыв
+  for (let d=0; d<4; d++){
+    const n = get(x+DX[d], y+DY[d]);
+    if (n===T.PLAYER || n===T.AMOEBA){ explode(x,y, t===T.BUTTERFLY); return; }
+  }
+  const cw = (t===T.BUTTERFLY);            // бабочка держится правой стены, светлячок — левой
+  const dir = G.dir[i];
+  const turn = cw ? (dir+1)&3 : (dir+3)&3;
+  const tx = x+DX[turn], ty = y+DY[turn];
+  if (get(tx,ty)===T.EMPTY){
+    G.g[i] = T.EMPTY; G.fall[i] = 0;
+    const j = idx(tx,ty);
+    G.g[j] = t; G.dir[j] = turn; G.scn[j] = 1;
+    return;
+  }
+  const fx = x+DX[dir], fy = y+DY[dir];
+  if (get(fx,fy)===T.EMPTY){
+    G.g[i] = T.EMPTY;
+    const j = idx(fx,fy);
+    G.g[j] = t; G.dir[j] = dir; G.scn[j] = 1;
+    return;
+  }
+  G.dir[i] = cw ? (dir+3)&3 : (dir+1)&3;
+}
+
+/* ================= амёба ================= */
+function stepAmoeba(x,y){
+  const i = idx(x,y);
+  G.amoebaCount++;
+  let free = false;
+  for (let d=0; d<4; d++){
+    const n = get(x+DX[d], y+DY[d]);
+    if (n===T.EMPTY || n===T.DIRT){ free = true; break; }
+  }
+  if (free) G.amoebaGrow = true;
+  if (G.amoebaConvert){
+    G.g[i] = (G.amoebaConvert===1) ? T.BOULDER : T.DIAMOND;
+    G.fall[i] = 0;
+    return;
+  }
+  if (!free) return;
+  const chance = G.amoebaFast ? 0.25 : 0.03;
+  if (G.rnd() > chance) return;
+  const d = (G.rnd()*4)|0;
+  const nx = x+DX[d], ny = y+DY[d];
+  const n = get(nx,ny);
+  if (n===T.EMPTY || n===T.DIRT){
+    G.g[idx(nx,ny)] = T.AMOEBA;
+    G.scn[idx(nx,ny)] = 1;
+  }
+}
+
+/* ================= один шаг игровой логики ================= */
+function tick(){
+  if (G.state !== 'play') return;
+
+  // ход записывается: (зерно уровня + журнал) полностью воспроизводят партию
+  if (G.log) G.log.push((keys.up?1:0)|(keys.right?2:0)|(keys.down?4:0)|(keys.left?8:0)|(keys.grab?16:0));
+
+  playerStep();
+
+  G.scn.fill(0);
+  if (G.alive && G.born===0) G.scn[idx(G.px,G.py)] = 1;
+
+  const prevConvert = G.amoebaConvert;
+  G.amoebaCount = 0; G.amoebaGrow = false;
+
+  for (let y=1; y<H-1; y++){
+    for (let x=1; x<W-1; x++){
+      const i = idx(x,y);
+      if (G.scn[i]) continue;
+      const t = G.g[i];
+      switch(t){
+        case T.BOULDER: case T.DIAMOND: stepFalling(x,y,t); break;
+        case T.FIREFLY: case T.BUTTERFLY: stepBug(x,y,t); break;
+        case T.AMOEBA: stepAmoeba(x,y); break;
+        case T.EXPAND:
+          if (get(x-1,y)===T.EMPTY){ G.g[idx(x-1,y)] = T.EXPAND; G.scn[idx(x-1,y)] = 1; }
+          if (get(x+1,y)===T.EMPTY){ G.g[idx(x+1,y)] = T.EXPAND; G.scn[idx(x+1,y)] = 1; }
+          break;
+        case T.BOOM: case T.BIRTH:
+          if (--G.ph[i] <= 0){ G.g[i] = (t===T.BIRTH) ? T.DIAMOND : T.EMPTY; G.fall[i] = 0; }
+          break;
+      }
+    }
+  }
+  // судьба амёбы
+  if (prevConvert){
+    G.amoebaConvert = 0;
+  } else if (G.amoebaCount > 0){
+    if (!G.amoebaGrow) G.amoebaConvert = 1;                                 // заперта — в валуны
+    else if (G.amoebaCount > (G.cave.amoebaMax||200)) G.amoebaConvert = 2;  // разрослась — в алмазы
+  }
+  if (G.amoebaTimer > 0 && --G.amoebaTimer <= 0) G.amoebaFast = true;
+  // волшебная стена
+  if (G.magicState === 1 && --G.magicTimer <= 0) G.magicState = 2;
+  // время
+  if (G.alive){
+    if (++G.subtick >= Math.round(1000/TICK)){
+      G.subtick = 0;
+      G.time--;
+      if (G.time <= 10 && G.time > 0) SFX.tick();
+      if (G.time <= 0){ G.time = 0; killPlayer(true); }
+    }
+  } else if (G.state === 'play'){
+    if (--G.endTimer <= 0) loseLife();
+  }
+  updateHud();
+}
+
+function loseLife(){
+  G.score = G.scoreAtStart;              // очки, набранные в погибшей попытке, не засчитываются
+  if (G.bonus){ G.state = 'between'; showBonusResult(false); return; }
+  G.lives--;
+  if (G.lives <= 0){ G.state = 'over'; showGameOver(); }
+  else startLevel(G.lvl, false, true);
+}
+function finishCave(){
+  if (G.bonus){ G.lives++; G.state = 'between'; showBonusResult(true); return; }
+  const bonus = G.time * 5 * (G.cave.mul || 1);
+  G.score += bonus;
+  G.state = 'between';
+  showBetween(bonus);
+}
+
+/* ================= отрисовка ================= */
+function draw(){
+  const f = (G.frame >> 2) & 3;
+  const A = G.atlas;
+  if (!A){ return; }
+
+  let vw = VW, vh = VH, cx = G.camx, cy = G.camy, ts = TS;
+  if (G.overview){ vw = W; vh = H; cx = 0; cy = 0; ts = Math.floor(640/W); }
+  if (cv.width !== vw*ts || cv.height !== vh*ts){ cv.width = vw*ts; cv.height = vh*ts; }
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0,0,cv.width,cv.height);
+
+  for (let y=0; y<vh; y++){
+    for (let x=0; x<vw; x++){
+      const gx = cx+x, gy = cy+y;
+      if (gx>=W||gy>=H) continue;
+      const i = idx(gx,gy);
+      const t = G.g[i];
+      let s = null;
+      switch(t){
+        case T.EMPTY: continue;
+        case T.DIRT: s = A.dirt[0]; break;
+        case T.BOULDER: s = A.boulder[0]; break;
+        case T.DIAMOND: s = A.diamond[f]; break;
+        case T.BRICK: s = A.brick[0]; break;
+        case T.STEEL: s = A.steel[0]; break;
+        case T.EXIT: s = A.exit[0]; break;
+        case T.EXITOPEN: s = A.exitopen[f&1]; break;
+        case T.FIREFLY: s = A.firefly[f]; break;
+        case T.BUTTERFLY: s = A.butterfly[f]; break;
+        case T.AMOEBA: s = A.amoeba[f]; break;
+        case T.SLIME: s = A.slime[f]; break;
+        case T.EXPAND: s = A.expand[0]; break;
+        case T.BOOM: s = A.boom[4-Math.min(4,G.ph[i])]; break;
+        case T.BIRTH: s = A.birth[4-Math.min(4,G.ph[i])]; break;
+        case T.INBOX: s = A.inbox[(G.frame>>2)&1]; break;
+        case T.MAGIC:
+          s = G.magicState===1 ? A.magicon[(G.frame>>1)%3] : (G.magicState===2 ? A.magicdead[0] : A.magic[0]);
+          break;
+        case T.PLAYER: {
+          let arr = A.player;
+          if (keys.left) arr = A.walkL;
+          else if (keys.right) arr = A.walkR;
+          s = arr[f % arr.length];
+          break;
+        }
+      }
+      if (s) ctx.drawImage(s, x*ts, y*ts, ts, ts);
+    }
+  }
+}
+function updateCamera(){
+  const mx = 6, my = 3;
+  if (G.px - G.camx < mx) G.camx = G.px - mx;
+  if (G.px - G.camx > VW-1-mx) G.camx = G.px - (VW-1-mx);
+  if (G.py - G.camy < my) G.camy = G.py - my;
+  if (G.py - G.camy > VH-1-my) G.camy = G.py - (VH-1-my);
+  G.camx = clamp(G.camx,0,W-VW);
+  G.camy = clamp(G.camy,0,H-VH);
+}
+
+/* ================= таблица рекордов ================= */
+let HS = [];
+const HS_KEY = 'rockfall:highscores';
+async function loadHS(){
+  try{
+    if (typeof window !== 'undefined' && window.storage){
+      const r = await window.storage.get(HS_KEY);
+      HS = r && r.value ? JSON.parse(r.value) : [];
+    }
+  } catch(e){ HS = []; }
+}
+async function saveHS(){
+  try{ if (typeof window !== 'undefined' && window.storage) await window.storage.set(HS_KEY, JSON.stringify(HS)); }
+  catch(e){}
+}
+function hsQualifies(sc){ return sc > 0 && (HS.length < 8 || sc > HS[HS.length-1].score); }
+function hsAdd(name, sc, cave){
+  HS.push({ name:(name||'ГОСТЬ').trim().slice(0,8).toUpperCase() || 'ГОСТЬ', score:sc, cave:cave });
+  HS.sort((a,b)=> b.score - a.score);
+  HS = HS.slice(0,8);
+  saveHS();
+}
+function hsHtml(){
+  if (!HS.length) return '<p class="hint">Рекордов пока нет.</p>';
+  return '<table class="hs">' + HS.map((r,i)=>
+    `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.score}</td><td>${r.cave}</td></tr>`).join('') + '</table>';
+}
+function scoreForm(title, sub){
+  showOverlay(`
+    <p class="big">${title}</p>
+    <p>${sub}</p>
+    <p>${t('gotScore')}: <b style="color:#fff">${G.score}</b> · ${t('reached')} <b style="color:#fff">${G.cave.num}</b></p>
+    <p>${t('yourName')}</p>
+    <p><input id="nm" maxlength="8" autocomplete="off">
+       <button class="play" id="sv" style="font-size:14px;padding:8px 16px">${t('saveBtn')}</button></p>
+    <p class="hint desk-only">${t('enterKey')}</p>
+  `);
+  const inp = document.getElementById('nm');
+  const sv = document.getElementById('sv');
+  if (sv) sv.addEventListener('click', ()=>{ hsAdd(inp.value, G.score, G.cave.num); showMenu(); });
+  if (!TOUCH) inp.focus();
+  inp.addEventListener('keydown', e=>{
+    e.stopPropagation();
+    if (e.key === 'Enter'){ hsAdd(inp.value, G.score, G.cave.num); showMenu(); }
+  });
+}
+
+/* ================= интерфейс ================= */
+function updateHud(){
+  const set = (id,v)=>{ const e = document.getElementById(id); if (e) e.textContent = v; };
+  set('l-lvl', t('lvl')); set('l-dia', t('dia')); set('l-time', t('time'));
+  set('l-score', t('score')); set('l-lives', t('lives'));
+  set('f-keys', t('foot'));
+  set('h-lvl', G.cave ? (G.bonus ? '★ ' + G.cave.num : G.cave.num + '/' + TOTAL) : '-');
+  set('h-dia', G.bonus ? String(G.got) : (G.got + '/' + G.need));
+  set('h-time', G.time);
+  set('h-score', G.score);
+  set('h-lives', G.lives);
+  set('f-name', G.cave ? (G.bonus ? t('bonusName')
+        : t('cave') + ' ' + G.cave.id + ' «' + G.cave.name + '» · ' + t('ring') + ' ' + (G.cave.ring+1)) : '');
+  const dia = document.getElementById('h-dia');
+  if (dia) dia.style.color = G.exitOpen ? '#40f040' : '#fff';
+}
+function showOverlay(html){ panel.innerHTML = html; overlay.style.display = 'flex'; }
+function wireNext(fn){
+  const b = document.getElementById('nx');
+  if (b) b.addEventListener('click', ()=>{ ac(); fn(); });
+}
+function hideOverlay(){ overlay.style.display = 'none'; }
+
+function showMenu(){
+  G.state = 'menu';
+  const langBtns = Object.keys(I18N).map(k=>
+    `<button class="lang ${k===LANG?'on':''}" data-l="${k}">${I18N[k].lab}</button>`).join('');
+  showOverlay(`
+    <div class="langs">${langBtns}</div>
+    <h1>ROCKFALL</h1>
+    <div class="cols">
+      <div>
+        <p>${t('intro')}</p>
+        ${TOUCH ? `<div class="keys">
+          <i>&#9650; &#9664; &#9654; &#9660;</i><span>${t('kMove')}</span>
+          <i>GRAB</i><span>${t('kGrab')}</span>
+          <i>MAP</i><span>${t('kMap')}</span>
+          <i>II</i><span>${t('kPause')}</span>
+        </div>` : `<div class="keys">
+          <i>&#8592; &#8593; &#8594; &#8595; / WASD</i><span>${t('kMove')}</span>
+          <i>Shift + &#8594;</i><span>${t('kGrab')}</span>
+          <i>ESC</i><span>${t('kPause')}</span>
+          <i>R</i><span>${t('kRestart')}</span>
+          <i>TAB</i><span>${t('kMap')}</span>
+        </div>`}
+        <p><button class="play" id="go">${t('play')}</button></p>
+        <p class="hint">${t('hint')}</p>
+      </div>
+      <div>
+        <p style="margin:0 0 6px;color:#f0d000;font-size:13px">${t('records')}</p>
+        ${hsHtml()}
+      </div>
+    </div>
+  `);
+  const go = document.getElementById('go');
+  if (go) go.addEventListener('click', ()=>{ ac(); startLevel(0, false, false); });
+  panel.querySelectorAll('.lang').forEach(b=>{
+    b.addEventListener('click', ()=>{ LANG = b.dataset.l; showMenu(); updateHud(); });
+  });
+}
+function showBetween(bonus){
+  const nextIsBonus = (G.lvl+1) % 8 === 0 && G.lvl+1 < TOTAL;
+  showOverlay(`
+    <p class="big">${t('done')}</p>
+    <p>${t('tbonus')}: <b style="color:#fff">${bonus}</b></p>
+    <p>${t('total')}: <b style="color:#fff">${G.score}</b></p>
+    ${nextIsBonus ? `<p style="color:#f0d000">${t('bonusIntro')}</p><p class="hint">${t('bonusRules')}</p>` : ''}
+    <p><button class="play" id="nx">${t('nextBtn')}</button></p>
+    <p class="hint desk-only">${t('next')}</p>
+  `);
+  wireNext(advance);
+}
+function showBonusResult(won){
+  showOverlay(`
+    <p class="big">${won ? t('bonusWin') : t('bonusLose')}</p>
+    <p>${t('lives')}: <b style="color:#fff">${G.lives}</b></p>
+    <p>${t('total')}: <b style="color:#fff">${G.score}</b></p>
+    <p><button class="play" id="nx">${t('nextBtn')}</button></p>
+    <p class="hint desk-only">${t('next')}</p>
+  `);
+  wireNext(advance);
+}
+function showGameOver(){
+  if (hsQualifies(G.score)){ scoreForm(t('over'), t('overSub')); return; }
+  showOverlay(`
+    <p class="big">${t('over')}</p>
+    <p>${t('gotScore')}: <b style="color:#fff">${G.score}</b></p>
+    <p><button class="play" id="nx">${t('menuBtn')}</button></p>
+    <p class="hint desk-only">${t('toMenu')}</p>
+  `);
+  wireNext(showMenu);
+}
+function showVictory(){
+  if (hsQualifies(G.score)){ scoreForm(t('win'), t('winSub')); return; }
+  showOverlay(`
+    <p class="big">${t('win')}</p>
+    <p>${t('gotScore')}: <b style="color:#fff">${G.score}</b></p>
+    <p><button class="play" id="nx">${t('menuBtn')}</button></p>
+    <p class="hint desk-only">${t('toMenu')}</p>
+  `);
+  wireNext(showMenu);
+}
+function showPause(){
+  showOverlay(`
+    <p class="big">${t('paused')}</p>
+    <p class="hint">${t('pauseKeys')}</p>
+  `);
+}
+
+/* ================= главный цикл ================= */
+let acc = 0, last = 0;
+function loop(t){
+  requestAnimationFrame(loop);
+  if (!last) last = t;
+  const dt = Math.min(t-last, 250); last = t;
+  G.frame++;
+  if (G.state === 'play'){
+    acc += dt;
+    while (acc >= TICK){ acc -= TICK; tick(); }
+    updateCamera();
+    draw();
+  } else if (G.state === 'won'){
+    if (--G.endTimer <= 0) finishCave();
+    draw();
+  } else if (G.g){
+    draw();
+  }
+}
+
+/* ================= ввод ================= */
+function togglePause(){
+  if (G.state==='play'){ G.state='paused'; showPause(); }
+  else if (G.state==='paused'){ G.state='play'; hideOverlay(); }
+}
+
+// сенсорный джойстик: держим кнопку — держится направление
+function bindTouch(){
+  try{
+    TOUCH = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  } catch(e){ TOUCH = false; }
+  if (!TOUCH) return;
+  document.body.classList.add('touch');
+  const btns = document.querySelectorAll('#pad .k');
+  for (let i=0;i<btns.length;i++){
+    const b = btns[i], k = b.dataset.k;
+    const press = e=>{
+      e.preventDefault(); ac();
+      b.classList.add('down');
+      if (k==='pause'){ togglePause(); return; }
+      if (k==='map'){ G.overview = true; return; }
+      keys[k] = true;
+    };
+    const release = e=>{
+      if (e) e.preventDefault();
+      b.classList.remove('down');
+      if (k==='map'){ G.overview = false; return; }
+      if (k!=='pause') keys[k] = false;
+    };
+    b.addEventListener('pointerdown', press);
+    b.addEventListener('pointerup', release);
+    b.addEventListener('pointercancel', release);
+    b.addEventListener('pointerleave', release);
+    b.addEventListener('contextmenu', e=>e.preventDefault());
+  }
+  // палец мог уйти со всех кнопок — не оставляем направление зажатым
+  addEventListener('pointerup', ()=>{
+    keys.up = keys.down = keys.left = keys.right = keys.grab = false;
+    const d = document.querySelectorAll('#pad .k.down');
+    for (let i=0;i<d.length;i++) d[i].classList.remove('down');
+  });
+}
+function bindKeys(){
+  const map = {
+    ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right',
+    KeyW:'up', KeyS:'down', KeyA:'left', KeyD:'right'
+  };
+  addEventListener('keydown', e=>{
+    const ae = document.activeElement;
+    if (ae && ae.tagName === 'INPUT') return;
+    if (map[e.code]){ keys[map[e.code]] = true; e.preventDefault(); }
+    if (e.code==='ShiftLeft'||e.code==='ShiftRight') keys.grab = true;
+    if (e.code==='Tab'){ G.overview = true; e.preventDefault(); }
+    if (e.code==='Escape') togglePause();
+    if (e.code==='KeyR' && (G.state==='play'||G.state==='paused')){
+      if (G.state==='paused'){ G.state='play'; hideOverlay(); }
+      killPlayer(true);                       // перезапуск стоит жизни — иначе очки можно фармить
+    }
+    if (e.code==='KeyM' && G.state!=='play') showMenu();
+    if (e.code==='Space'){
+      e.preventDefault();
+      if (G.state==='between') advance();
+      else if (G.state==='over') showMenu();
+    }
+    ac();
+  });
+  addEventListener('keyup', e=>{
+    if (map[e.code]) keys[map[e.code]] = false;
+    if (e.code==='ShiftLeft'||e.code==='ShiftRight') keys.grab = false;
+    if (e.code==='Tab') G.overview = false;
+  });
+  addEventListener('blur', ()=>{ for(const k in keys) keys[k]=false; });
+}
+
+function init(){
+  cv = document.getElementById('cv');
+  ctx = cv.getContext('2d');
+  panel = document.getElementById('panel');
+  overlay = document.getElementById('overlay');
+  bindKeys();
+  bindTouch();
+  showMenu();
+  updateHud();
+  loadHS().then(()=>{ if (G.state === 'menu') showMenu(); });
+  requestAnimationFrame(loop);
+}
+if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('load', init);
+</script>
+</body>
+</html>
